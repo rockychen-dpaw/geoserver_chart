@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $.Release.Name }}-geoserver-configmap-config-files
+  annotations:
+    field.cattle.io/description: customized geoserver config files
+binaryData:
+  geowebcache.xml: >- 
+{{ include "geoserver.geowebcache.xml" . | b64enc | indent 4 }}
+  security.config.xml: >- 
+{{ include "geoserver.security.config.xml" . | b64enc | indent 4 }}
+  security.filter.nginx_sso.config.xml: >- 
+{{ include "geoserver.security.filter.nginx_sso.config.xml" . | b64enc | indent 4 }}

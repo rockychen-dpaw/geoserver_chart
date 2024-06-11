@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $.Release.Name }}-geoserver-configmap-scripts
+  annotations:
+    field.cattle.io/description: geoserver scripts
+binaryData:
+  geoserver_startup: >- 
+{{ include "geoserver.geoserver_startup" . | b64enc | indent 4 }}
+  geoserver_liveness: >- 
+{{ include "geoserver.geoserver_liveness" . | b64enc | indent 4 }}
+  copy_extra_settings: >- 
+{{ include "geoserver.geoserver_copy_extra_settings" . | b64enc | indent 4 }}
+  start_geoserver: >- 
+{{ include "geoserver.start_geoserver" . | b64enc | indent 4 }}

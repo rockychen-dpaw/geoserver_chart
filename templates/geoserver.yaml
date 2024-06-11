@@ -1,0 +1,148 @@
+{{- if not ($.Values.geoserver.clustering | default false) }}
+{{- $startupProbe :=  $.Values.geoserver.startupProbe | default dict }}
+{{- $livenessProbe :=  $.Values.geoserver.livenessProbe | default dict }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $.Release.Name }}
+  namespace: {{ $.Release.Namespace }}
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  selector:
+    matchLabels:
+      workload.user.cattle.io/workloadselector: apps.deployment-{{ $.Release.Namespace }}-{{ $.Release.Name }}-geoserver
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        workload.user.cattle.io/workloadselector: apps.deployment-{{ $.Release.Namespace }}-{{ $.Release.Name }}-geoserver
+      namespace: {{ $.Release.Namespace }}
+    spec:
+      containers:
+        - name: {{ $.Release.Name }}-geoserver
+          image: {{ $.Values.geoserver.image }}
+          command:
+            - /usr/local/geoserver/bin/start_geoserver
+          env:
+            - name: RELEASE_TIME
+              value: {{ now | date "2006-01-02T15:04:05" | quote }}
+            - name: GEOSERVER_UID
+              value: {{ $.Values.geoserver.userid | default 1000 }}
+            - name: GEOSERVER_GID
+              value: {{ $.Values.geoserver.groupid | default 1000 }}
+            - name: USER
+              value: {{ $.Values.geoserver.user | default "geoserver" }}
+            - name: GROUP_NAME
+              value: {{ $.Values.geoserver.group | default "geoserver" }}
+            - name: EXTRA_CONFIG_DIR
+              value: "/usr/local/geoserver/settings"
+            - name: GEOSERVER_CSRF_WHITELIST
+              value: {{ $.Values.geoserver.adminDomain | default (cat $.Release.Name "admin.dbca.wa.gov.au") | quote }}
+            {{- range $key,$value := $.Values.geoserver.envs }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+          envFrom:
+            {{- range $name,$data := $.Values.geoserver.secrets | default dict }}
+            - secretRef:
+                name: {{ $.Release.Name }}-geoserver-secret-{{ $name }}
+                optional: false
+            {{- end }}
+            {{- range $name,$data := $.Values.geoserver.configmaps | default dict }}
+            - configMapRef:
+                name: {{ $.Release.Name }}-geoserver-configmap-{{ $name }}
+                optional: false
+            {{- end }}
+          startupProbe:
+            failureThreshold: {{ $startupProbe.failureThreshold | default 30 }}
+            successThreshold: {{ $startupProbe.successThreshold | default 1 }}
+            initialDelaySeconds: {{ $startupProbe.initialDelaySeconds | default 0 }}
+            timeoutSeconds: {{ $startupProbe.timeoutSeconds | default 1 }}
+            periodSeconds: {{ $startupProbe.timeoutSeconds | default 1 }}
+            exec:
+              command:
+                - /usr/local/geoserver/bin/geoserver_startup
+          livenessProbe:
+            failureThreshold: {{ $livenessProbe.failureThreshold | default 2 }}
+            successThreshold: {{ $livenessProbe.successThreshold | default 1 }}
+            initialDelaySeconds: {{ $livenessProbe.initialDelaySeconds | default 1 }}
+            timeoutSeconds: {{ $livenessProbe.timeoutSeconds | default 1 }}
+            periodSeconds: {{ $livenessProbe.periodSeconds | default 2 }}
+            exec:
+              command:
+                - /usr/local/geoserver/bin/geoserver_liveness
+          {{- if $.Values.geoserver.resources }}
+          resources:
+{{ $.Values.geoserver.resources | toYaml | indent 12 }}
+          {{- end }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            {{- if hasKey $.Values.geoserver "group" }}
+            runAsGroup: {{ $.Values.geoserver.group }}
+            {{- end }}
+            runAsNonRoot: true
+            {{- if hasKey $.Values.geoserver "user" }}
+            runAsUser: {{ $.Values.geoserver.user }}
+            runAsNonRoot: true
+            {{- else}}
+            runAsNonRoot: false
+            {{- end }}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+            - name: config-files
+              mountPath: "/usr/local/geoserver/settings"
+            - name: scripts
+              mountPath: "/usr/local/geoserver/bin"
+            {{- range $name,$config := get ($.Values.geoserver.volumes | default dict) "pvcs" | default dict }}
+            {{- range $i,$mount := $config.mounts | default list }}
+            - name: {{ $name }}
+              mountPath: {{ $mount.mountPoint | quote }}
+              {{- if hasKey $mount "subPath" }}
+              subPath: {{ $mount.subPath | quote }}
+              {{- end }}
+            {{- end }}
+            {{- end }}
+      dnsPolicy: ClusterFirst
+      {{- if hasKey $.Values.geoserver "group" }}
+      securityContext:
+        fsGroup: {{ $.Values.geoserver.group }}
+      {{- end }}
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      terminationGracePeriodSeconds: 30
+      {{ if hasKey $.Values.geoserver "tolerations" }}
+      tolerations:
+{{ $.Values.geoserver.tolerations | toYaml | indent 8 }}
+      {{- end }}
+      volumes:
+      - name: config-files
+        configMap:
+          name: {{ $.Release.Name }}-geoserver-configmap-config-files
+          optional: false
+          defaultMode: 777
+      - name: scripts
+        configMap:
+          name: {{ $.Release.Name }}-geoserver-configmap-scripts
+          optional: false
+          defaultMode: 555
+      {{- range $name,$config := get ($.Values.geoserver.volumes | default dict) "pvcs" | default dict }}
+      - name: {{ $name }}
+        persistentVolumeClaim:
+          claimName: {{ $.Release.Name }}-geoserver-{{ $name }}
+          type: persistentvolumeclaim
+          optional: false
+      {{- end }}
+  updateStrategy:
+    rollingUpdate:
+      partition: 0
+    type: RollingUpdate
+{{- end }}

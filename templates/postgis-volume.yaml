@@ -1,0 +1,26 @@
+{{- if hasKey $.Values "postgis" }}
+{{- $count := 0 }}
+{{- range $name,$config := get ($.Values.postgis.volumes | default dict) "pvcs" }}
+    {{- $count = add $count 1}}
+{{- end }}
+
+{{- if gt $count 0 }}
+{{- range $name,$config := $.Values.postgis.volumes.pvcs }}
+    {{- if gt $count 1 }}
+---
+    {{- end }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $.Release.Name }}-postgis-{{ $name }}
+spec:
+  accessModes:
+    - {{ $config.accessMode | default "ReadWriteOnce" }}
+  resources:
+    requests:
+      storage: {{ $config.storage}}
+  storageClassName: {{ $config.storageClassName | default "managed-csi-retain" }}
+  volumeMode: {{ $config.volumeMode | default "Filesystem" }}
+{{- end }}
+{{- end }}
+{{- end }}

@@ -1,0 +1,117 @@
+#borgslave statefule
+{{- if hasKey $.Values "borgslave" }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ $.Release.Name }}-borgslave
+spec:
+  selector:
+    matchLabels:
+      workload.user.cattle.io/workloadselector: apps.statefulset-{{ $.Release.Namespace}}-{{ $.Release.Name }}-borgslave
+  podManagementPolicy: OrderedReady
+  replicas: 1
+  revisionHistoryLimit: 10
+  serviceName: {{ $.Release.Name }}-borgslave
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        #same as matchLabels
+        workload.user.cattle.io/workloadselector: apps.statefulset-{{ $.Release.Namespace}}-{{ $.Release.Name }}-borgslave
+    spec:
+      containers:
+        - command:
+            - /app/start_sync.sh
+          image: {{ $.Values.borgslave.image }}
+          imagePullPolicy: Always
+          name: {{ $.Release.Name }}-borgslave
+          env:
+            - name: RELEASE_TIME
+              value: {{ now | date "2006-01-02T15:04:05" | quote }}
+            - name: SLAVE_NAME
+              value: {{ $.Release.Name | quote }}
+            {{- range $key,$value := $.Values.borgslave.envs | default dict }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+          envFrom:
+            {{- range $name,$data := $.Values.borgslave.secrets }}
+            - secretRef:
+                name: {{ $.Release.Name }}-borgslave-secret-{{ $name }}
+                optional: false
+            {{- end }}
+            {{- range $name,$data := $.Values.borgslave.configmaps }}
+            - configMapRef:
+                name: {{ $.Release.Name }}-borgslave-configmap-{{ $name }}
+                optional: false
+            {{- end }}
+          {{- if $.Values.borgslave.resources }}
+          resources:
+{{ $.Values.borgslave.resources | toYaml | indent 12 }}
+          {{- end }}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          tty: true
+          stdin: true
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            {{- if hasKey $.Values.borgslave "groupid" }}
+            runAsGroup: {{ $.Values.borgslave.groupid }}
+            {{- end }}
+            runAsNonRoot: true
+            {{- if hasKey $.Values.borgslave "userid" }}
+            runAsUser: {{ $.Values.borgslave.userid }}
+            {{- end }}
+          volumeMounts:
+          {{- range $name,$config := $.Values.borgslave.volumes }}
+          {{- range $i,$data := $config.mounts }}
+          - mountPath: {{ $config.mountPath }}
+            name: {{ $name }}
+            {{- if hasKey $data "subPath" }}
+            subPath: {{ $data.subPath }}
+            {{- end }}
+          {{- end }}
+          {{- end }}
+      dnsPolicy: ClusterFirst
+      imagePullSecrets:
+        - name: {{ $.Release.Name }}-borgslave-secret-imagepull
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      {{- if hasKey $.Values.borgslave "groupid" }}
+      securityContext:
+        fsGroup: {{ $.Values.borgslave.groupid }}
+      {{- end }}
+      terminationGracePeriodSeconds: 30
+      {{- if $.Values.borgslave.tolerations }}
+      tolerations:
+{{ $.Values.borgslave.tolerations | toYaml | indent 8 }}
+      {{- end }}
+      {{- if not (empty $.Values.borgslave.volumes) }}
+      volumes:
+      {{- range $name,$config := get ($.Values.borgslave.volumes | default dict) "secrets" | default dict }}
+      - name: {{ $name }}
+        secret:
+          {{- if hasKey $config "defaultMode" }}
+          defaultMode: {{ $config.defaultMode }}
+          {{- end }}
+          {{- if hasKey $config "optional" }}
+          optional: {{ $config.optional }}
+          {{- end }}
+          secretName: {{ $.Release.Name }}-borgslave-volume-secret-{{ $name }}
+      {{- end }}
+      {{- range $name,$config := get ($.Values.borgslave.volumes | default dict) "pvcs" | default dict }}
+      - name: {{ $name }}
+        persistentVolumeClaim:
+          claimName: {{ $.Release.Name }}-borgslave-{{ $name }}
+          type: persistentvolumeclaim
+          optional: false
+      {{- end }}
+      {{- end }}
+  updateStrategy:
+    rollingUpdate:
+      partition: 0
+    type: RollingUpdate
+{{- end}}

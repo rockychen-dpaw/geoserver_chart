@@ -1,0 +1,24 @@
+{{- $count := 0 }}
+{{- range $name,$config := get ($.Values.geoserver.volumes | default dict) "pvcs" }}
+    {{- $count = add $count 1}}
+{{- end }}
+
+{{- if gt $count 0 }}
+{{- range $name,$config := $.Values.geoserver.volumes.pvcs }}
+    {{- if gt $count 1 }}
+---
+    {{- end }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $.Release.Name }}-geoserver-{{ $name }}
+spec:
+  accessModes:
+    - {{ $config.accessMode | default "ReadWriteOnce" }}
+  resources:
+    requests:
+      storage: {{ $config.storage}}
+  storageClassName: {{ $config.storageClassName | default "managed-csi-retain" }}
+  volumeMode: {{ $config.volumeMode | default "Filesystem" }}
+{{- end }}
+{{- end }}

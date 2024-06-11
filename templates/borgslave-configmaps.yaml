@@ -1,0 +1,24 @@
+{{- if hasKey $.Values "borgslave" }}
+{{- $configmaps := 0 }} 
+{{- range $name,$data := $.Values.borgslave.configmaps | default dict }}
+    {{- $configmaps = add1 $configmaps}}
+{{- end }}
+{{- range $name,$data := $.Values.borgslave.configmaps | default dict }}
+{{- if gt $configmaps 1 }}
+---
+{{- end }}
+apiVersion: v1
+data:
+  {{- range $key,$value := $data }}
+  {{- if kindIs "string" $value }}
+  {{ $key }}: {{ printf $value $.Release.Name | toString | quote }}
+  {{- else }}
+  {{ $key }}: {{ $value  }}
+  {{- end }}
+  {{- end }}
+kind: ConfigMap
+metadata:
+  name: {{ $.Release.Name }}-borgslave-configmap-{{ $name }}
+  namespace: {{ $.Release.Namespace }}
+{{- end }}
+{{- end }}

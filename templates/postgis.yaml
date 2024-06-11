@@ -1,0 +1,137 @@
+#postgis statefule
+{{- if hasKey $.Values "postgis" }}
+{{- $startupProbe :=  $.Values.postgis.startupProbe | default dict }}
+{{- $livenessProbe :=  $.Values.postgis.livenessProbe | default dict }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ $.Release.Name }}-postgis
+spec:
+  selector:
+    matchLabels:
+      workload.user.cattle.io/workloadselector: apps.statefulset-{{ $.Release.Namespace}}-{{ $.Release.Name }}-postgis
+  podManagementPolicy: OrderedReady
+  replicas: 1
+  revisionHistoryLimit: 10
+  serviceName: {{ $.Release.Name }}-postgis
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        #same as matchLabels
+        workload.user.cattle.io/workloadselector: apps.statefulset-{{ $.Release.Namespace}}-{{ $.Release.Name }}-postgis
+    spec:
+      containers:
+        - args:
+            - '-c'
+            - max_connections={{ $.Values.postgis.maxConnections | default 1000 | int }}
+            - '-c'
+            - archive_mode=off
+          image: {{ $.Values.postgis.image }}
+          imagePullPolicy: Always
+          name: {{ $.Release.Name }}-postgis
+          env:
+            - name: RELEASE_TIME
+              value: {{ now | date "2006-01-02T15:04:05" | quote }}
+            {{- range $key,$value := $.Values.postgis.envs | default dict }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+          envFrom:
+            {{- range $name,$data := $.Values.postgis.secrets }}
+            - secretRef:
+                name: {{ $.Release.Name }}-postgis-secret-{{ $name }}
+                optional: false
+            {{- end }}
+            {{- range $name,$data := $.Values.postgis.configmaps }}
+            - configMapRef:
+                name: {{ $.Release.Name }}-postgis-configmap-{{ $name }}
+                optional: false
+            {{- end }}
+          {{- if $.Values.postgis.resources }}
+          resources:
+{{ $.Values.postgis.resources | toYaml | indent 12 }}
+          {{- end }}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          tty: true
+          stdin: true
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            {{- if hasKey $.Values.postgis "groupid" }}
+            runAsGroup: {{ $.Values.postgis.groupid }}
+            {{- end }}
+            runAsNonRoot: true
+            {{- if hasKey $.Values.postgis "userid" }}
+            runAsUser: {{ $.Values.postgis.userid }}
+            {{- end }}
+          volumeMounts:
+          {{- range $name,$config := $.Values.postgis.volumes }}
+          {{- range $i,$data := $config.mounts }}
+          - mountPath: {{ $config.mountPath }}
+            name: {{ $name }}
+            {{- if hasKey $data "subPath" }}
+            subPath: {{ $data.subPath }}
+            {{- end }}
+          {{- end }}
+          {{- end }}
+          startupProbe:
+            failureThreshold: {{ $startupProbe.failureThreshold | default 30 }}
+            successThreshold: {{ $startupProbe.successThreshold | default 1 }}
+            initialDelaySeconds: {{ $startupProbe.initialDelaySeconds | default 0 }}
+            timeoutSeconds: {{ $startupProbe.timeoutSeconds | default 1 }}
+            periodSeconds: {{ $startupProbe.timeoutSeconds | default 1 }}
+            exec:
+              command:
+                - psql
+                - '-d'
+                - postgres
+                - '-U'
+                - postgres
+                - '-c'
+                - select 'PONG' as ping
+          livenessProbe:
+            failureThreshold: {{ $livenessProbe.failureThreshold | default 2 }}
+            successThreshold: {{ $livenessProbe.successThreshold | default 1 }}
+            initialDelaySeconds: {{ $livenessProbe.initialDelaySeconds | default 1 }}
+            timeoutSeconds: {{ $livenessProbe.timeoutSeconds | default 1 }}
+            periodSeconds: {{ $livenessProbe.periodSeconds | default 2 }}
+            exec:
+              command:
+                - psql
+                - '-d'
+                - postgres
+                - '-U'
+                - postgres
+                - '-c'
+                - select 'PONG' as ping
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      {{- if hasKey $.Values.postgis "groupid" }}
+      securityContext:
+        fsGroup: {{ $.Values.postgis.groupid }}
+      {{- end }}
+      terminationGracePeriodSeconds: 30
+      {{- if $.Values.postgis.tolerations }}
+      tolerations:
+{{ $.Values.postgis.tolerations | toYaml | indent 8 }}
+      {{- end }}
+      {{- if not (empty $.Values.postgis.volumes) }}
+      volumes:
+      {{- range $name,$config := $.Values.postgis.volumes.pvcs | default dict }}
+      - name: {{ $name }}
+        persistentVolumeClaim:
+          claimName: {{ $.Release.Name }}-postgis-{{ $name }}
+          type: persistentvolumeclaim
+          optional: false
+      {{- end }}
+      {{- end }}
+  updateStrategy:
+    rollingUpdate:
+      partition: 0
+    type: RollingUpdate
+{{- end}}

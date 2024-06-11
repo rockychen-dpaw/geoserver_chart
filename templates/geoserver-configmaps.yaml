@@ -1,0 +1,18 @@
+{{- $configmaps := 0 }} 
+{{- range $name,$data := $.Values.geoserver.configmaps | default dict }}
+    {{- $configmaps = add1 $configmaps}}
+{{- end }}
+{{- range $name,$data := $.Values.geoserver.configmaps | default dict }}
+{{- if gt $configmaps 1 }}
+---
+{{- end }}
+apiVersion: v1
+data:
+  {{- range $key,$value := $data }}
+  {{ $key }}: {{ $value | toString | quote }}
+  {{- end }}
+kind: ConfigMap
+metadata:
+  name: {{ $.Release.Name }}-geoserver-configmap-{{ $name }}
+  namespace: {{ $.Release.Namespace }}
+{{- end }}
