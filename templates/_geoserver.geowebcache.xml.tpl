@@ -1,5 +1,4 @@
-{{- define "geoserver.geowebcache.xml" }}
-<?xml version="1.0" encoding="utf-8"?>
+{{- define "geoserver.geowebcache.xml" }}<?xml version="1.0" encoding="utf-8"?>
 <gwcConfiguration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://geowebcache.org/schema/1.23.0 http://geowebcache.org/schema/1.23.0/geowebcache.xsd" xmlns="http://geowebcache.org/schema/1.23.0">
   <version>1.23.0</version>
   <backendTimeout>120</backendTimeout>

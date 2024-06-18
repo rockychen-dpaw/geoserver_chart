@@ -1,0 +1,11 @@
+{{- if hasKey $.Values "postgis" }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $.Release.Name }}-postgis-configmap-scripts
+  annotations:
+    field.cattle.io/description: postgis scripts
+binaryData:
+  init_postgis: >- 
+{{ include "postgis.init_postgis" . | b64enc | indent 4 }}
+{{- end }}

@@ -4,7 +4,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ $.Release.Name }}
+  name: {{ $.Release.Name }}-geoserver
   namespace: {{ $.Release.Namespace }}
 spec:
   progressDeadlineSeconds: 600
@@ -23,24 +23,82 @@ spec:
         workload.user.cattle.io/workloadselector: apps.deployment-{{ $.Release.Namespace }}-{{ $.Release.Name }}-geoserver
       namespace: {{ $.Release.Namespace }}
     spec:
+      initContainers:
+        - name: {{ $.Release.Name }}-geoserver-init
+          image: {{ $.Values.geoserver.image }}
+          imagePullPolicy: Always
+          command:
+            - /geoserver/bin/init_geoserver
+          env:
+            - name: GEOSERVER_CSRF_WHITELIST
+              value: {{ $.Values.geoserver.adminDomain | default (cat $.Release.Name "admin.dbca.wa.gov.au") | quote }}
+            - name: CLUSTERING
+              value: {{ ($.Values.geoserver.clustering | default false) | toString | quote }}
+            {{- range $key,$value := $.Values.geoserver.envs }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+          envFrom:
+            {{- range $name,$data := $.Values.geoserver.secrets | default dict }}
+            - secretRef:
+                name: {{ $.Release.Name }}-geoserver-secret-{{ $name }}
+                optional: false
+            {{- end }}
+            {{- range $name,$data := $.Values.geoserver.configmaps | default dict }}
+            - configMapRef:
+                name: {{ $.Release.Name }}-geoserver-configmap-{{ $name }}
+                optional: false
+            {{- end }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            {{- if hasKey $.Values.geoserver "groupid" }}
+            runAsGroup: {{ $.Values.geoserver.groupid }}
+            {{- end }}
+            {{- if hasKey $.Values.geoserver "userid" }}
+            runAsUser: {{ $.Values.geoserver.userid }}
+            runAsNonRoot: true
+            {{- else}}
+            runAsNonRoot: false
+            {{- end }}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+            - name: config-files
+              mountPath: "/geoserver/settings"
+            - name: scripts
+              mountPath: "/geoserver/bin"
+            {{- range $type,$volumes := $.Values.geoserver.volumes}}
+            {{- range $name,$config := $volumes}}
+            {{- range $i,$mount := $config.mounts }}
+            - mountPath: {{ $mount.mountPath }}
+              name: {{ $name }}
+              {{- if hasKey $mount "subPath" }}
+              subPath: {{ $mount.subPath }}
+              {{- end }}
+            {{- end }}  
+            {{- end }}
+            {{- end }}
       containers:
         - name: {{ $.Release.Name }}-geoserver
           image: {{ $.Values.geoserver.image }}
+          imagePullPolicy: Always
           command:
-            - /usr/local/geoserver/bin/start_geoserver
+            - /geoserver/bin/start_geoserver
+          stdin: true
+          stdinOnce: false
+          tty: true
           env:
-            - name: RELEASE_TIME
-              value: {{ now | date "2006-01-02T15:04:05" | quote }}
             - name: GEOSERVER_UID
-              value: {{ $.Values.geoserver.userid | default 1000 }}
+              value: {{ $.Values.geoserver.userid | default 1000 | quote }}
             - name: GEOSERVER_GID
-              value: {{ $.Values.geoserver.groupid | default 1000 }}
+              value: {{ $.Values.geoserver.groupid | default 1000 | quote  }}
             - name: USER
               value: {{ $.Values.geoserver.user | default "geoserver" }}
             - name: GROUP_NAME
               value: {{ $.Values.geoserver.group | default "geoserver" }}
-            - name: EXTRA_CONFIG_DIR
-              value: "/usr/local/geoserver/settings"
             - name: GEOSERVER_CSRF_WHITELIST
               value: {{ $.Values.geoserver.adminDomain | default (cat $.Release.Name "admin.dbca.wa.gov.au") | quote }}
             {{- range $key,$value := $.Values.geoserver.envs }}
@@ -66,7 +124,7 @@ spec:
             periodSeconds: {{ $startupProbe.timeoutSeconds | default 1 }}
             exec:
               command:
-                - /usr/local/geoserver/bin/geoserver_startup
+                - /geoserver/bin/geoserver_startup
           livenessProbe:
             failureThreshold: {{ $livenessProbe.failureThreshold | default 2 }}
             successThreshold: {{ $livenessProbe.successThreshold | default 1 }}
@@ -75,7 +133,7 @@ spec:
             periodSeconds: {{ $livenessProbe.periodSeconds | default 2 }}
             exec:
               command:
-                - /usr/local/geoserver/bin/geoserver_liveness
+                - /geoserver/bin/geoserver_liveness
           {{- if $.Values.geoserver.resources }}
           resources:
 {{ $.Values.geoserver.resources | toYaml | indent 12 }}
@@ -85,12 +143,11 @@ spec:
             capabilities:
               drop:
                 - ALL
-            {{- if hasKey $.Values.geoserver "group" }}
-            runAsGroup: {{ $.Values.geoserver.group }}
+            {{- if hasKey $.Values.geoserver "groupid" }}
+            runAsGroup: {{ $.Values.geoserver.groupid }}
             {{- end }}
-            runAsNonRoot: true
-            {{- if hasKey $.Values.geoserver "user" }}
-            runAsUser: {{ $.Values.geoserver.user }}
+            {{- if hasKey $.Values.geoserver "userid" }}
+            runAsUser: {{ $.Values.geoserver.userid }}
             runAsNonRoot: true
             {{- else}}
             runAsNonRoot: false
@@ -99,22 +156,24 @@ spec:
           terminationMessagePolicy: File
           volumeMounts:
             - name: config-files
-              mountPath: "/usr/local/geoserver/settings"
+              mountPath: "/geoserver/settings"
             - name: scripts
-              mountPath: "/usr/local/geoserver/bin"
-            {{- range $name,$config := get ($.Values.geoserver.volumes | default dict) "pvcs" | default dict }}
-            {{- range $i,$mount := $config.mounts | default list }}
-            - name: {{ $name }}
-              mountPath: {{ $mount.mountPoint | quote }}
+              mountPath: "/geoserver/bin"
+            {{- range $type,$volumes := $.Values.geoserver.volumes}}
+            {{- range $name,$config := $volumes}}
+            {{- range $i,$mount := $config.mounts }}
+            - mountPath: {{ $mount.mountPath }}
+              name: {{ $name }}
               {{- if hasKey $mount "subPath" }}
-              subPath: {{ $mount.subPath | quote }}
+              subPath: {{ $mount.subPath }}
               {{- end }}
+            {{- end }}  
             {{- end }}
             {{- end }}
       dnsPolicy: ClusterFirst
-      {{- if hasKey $.Values.geoserver "group" }}
+      {{- if hasKey $.Values.geoserver "groupid" }}
       securityContext:
-        fsGroup: {{ $.Values.geoserver.group }}
+        fsGroup: {{ $.Values.geoserver.groupid }}
       {{- end }}
       restartPolicy: Always
       schedulerName: default-scheduler
@@ -128,21 +187,15 @@ spec:
         configMap:
           name: {{ $.Release.Name }}-geoserver-configmap-config-files
           optional: false
-          defaultMode: 777
+          defaultMode: 0777
       - name: scripts
         configMap:
           name: {{ $.Release.Name }}-geoserver-configmap-scripts
           optional: false
-          defaultMode: 555
+          defaultMode: 0555
       {{- range $name,$config := get ($.Values.geoserver.volumes | default dict) "pvcs" | default dict }}
       - name: {{ $name }}
         persistentVolumeClaim:
           claimName: {{ $.Release.Name }}-geoserver-{{ $name }}
-          type: persistentvolumeclaim
-          optional: false
       {{- end }}
-  updateStrategy:
-    rollingUpdate:
-      partition: 0
-    type: RollingUpdate
 {{- end }}

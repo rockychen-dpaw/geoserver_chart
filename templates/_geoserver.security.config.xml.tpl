@@ -1,5 +1,4 @@
-{{- define "geoserver.security.config.xml" }}
-<security>
+{{- define "geoserver.security.config.xml" }}<security>
   <roleServiceName>default</roleServiceName>
   <authProviderNames>
     <string>default</string>

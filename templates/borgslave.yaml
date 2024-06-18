@@ -21,13 +21,11 @@ spec:
     spec:
       containers:
         - command:
-            - /app/start_sync.sh
+            - /borgslave/bin/start_sync
           image: {{ $.Values.borgslave.image }}
           imagePullPolicy: Always
           name: {{ $.Release.Name }}-borgslave
           env:
-            - name: RELEASE_TIME
-              value: {{ now | date "2006-01-02T15:04:05" | quote }}
             - name: SLAVE_NAME
               value: {{ $.Release.Name | quote }}
             {{- range $key,$value := $.Values.borgslave.envs | default dict }}
@@ -66,13 +64,17 @@ spec:
             runAsUser: {{ $.Values.borgslave.userid }}
             {{- end }}
           volumeMounts:
-          {{- range $name,$config := $.Values.borgslave.volumes }}
-          {{- range $i,$data := $config.mounts }}
-          - mountPath: {{ $config.mountPath }}
+          - name: scripts
+            mountPath: "/borgslave/bin"
+          {{- range $type,$volumes := $.Values.borgslave.volumes}}
+          {{- range $name,$config := $volumes}}
+          {{- range $i,$mount := $config.mounts }}
+          - mountPath: {{ $mount.mountPath }}
             name: {{ $name }}
-            {{- if hasKey $data "subPath" }}
-            subPath: {{ $data.subPath }}
+            {{- if hasKey $mount "subPath" }}
+            subPath: {{ $mount.subPath }}
             {{- end }}
+          {{- end }}
           {{- end }}
           {{- end }}
       dnsPolicy: ClusterFirst
@@ -91,6 +93,11 @@ spec:
       {{- end }}
       {{- if not (empty $.Values.borgslave.volumes) }}
       volumes:
+      - name: scripts
+        configMap:
+          name: {{ $.Release.Name }}-borgslave-configmap-scripts
+          optional: false
+          defaultMode: 0555
       {{- range $name,$config := get ($.Values.borgslave.volumes | default dict) "secrets" | default dict }}
       - name: {{ $name }}
         secret:
@@ -106,8 +113,6 @@ spec:
       - name: {{ $name }}
         persistentVolumeClaim:
           claimName: {{ $.Release.Name }}-borgslave-{{ $name }}
-          type: persistentvolumeclaim
-          optional: false
       {{- end }}
       {{- end }}
   updateStrategy:

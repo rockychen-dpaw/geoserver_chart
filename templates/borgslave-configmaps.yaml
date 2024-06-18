@@ -10,11 +10,15 @@
 apiVersion: v1
 data:
   {{- range $key,$value := $data }}
-  {{- if kindIs "string" $value }}
-  {{ $key }}: {{ printf $value $.Release.Name | toString | quote }}
-  {{- else }}
-  {{ $key }}: {{ $value  }}
-  {{- end }}
+    {{- if kindIs "string" $value }}
+      {{- if contains "%s" $value }}
+  {{ $key }}: {{ printf $value $.Release.Name | quote }}
+      {{- else }}
+  {{ $key }}: {{ $value | quote }}
+      {{- end }}
+    {{- else }}
+  {{ $key }}: {{ $value | toString | quote }}
+    {{- end }}
   {{- end }}
 kind: ConfigMap
 metadata:

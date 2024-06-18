@@ -9,7 +9,7 @@ binaryData:
 {{ include "geoserver.geoserver_startup" . | b64enc | indent 4 }}
   geoserver_liveness: >- 
 {{ include "geoserver.geoserver_liveness" . | b64enc | indent 4 }}
-  copy_extra_settings: >- 
-{{ include "geoserver.geoserver_copy_extra_settings" . | b64enc | indent 4 }}
+  init_geoserver: >- 
+{{ include "geoserver.init_geoserver" . | b64enc | indent 4 }}
   start_geoserver: >- 
 {{ include "geoserver.start_geoserver" . | b64enc | indent 4 }}

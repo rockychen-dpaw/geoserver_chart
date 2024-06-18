@@ -11,3 +11,5 @@ binaryData:
 {{ include "geoserver.security.config.xml" . | b64enc | indent 4 }}
   security.filter.nginx_sso.config.xml: >- 
 {{ include "geoserver.security.filter.nginx_sso.config.xml" . | b64enc | indent 4 }}
+  gwc-gs.xml: >- 
+{{ include "geoserver.gwc-gs.xml" . | b64enc | indent 4 }}

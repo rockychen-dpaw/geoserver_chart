@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $.Release.Name }}-borgslave-configmap-scripts
+  annotations:
+    field.cattle.io/description: borgslave scripts
+binaryData:
+  start_sync: >- 
+{{ include "borgslave.start_sync" . | b64enc | indent 4 }}
