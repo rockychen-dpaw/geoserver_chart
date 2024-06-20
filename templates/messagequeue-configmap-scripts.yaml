@@ -1,0 +1,13 @@
+{{- if hasKey $.Values "messagequeue" }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $.Release.Name }}-mq-configmap-scripts
+  annotations:
+    field.cattle.io/description: messagequeue scripts
+binaryData:
+  init_mq: >- 
+{{ include "messagequeue.init_mq" . | b64enc | indent 4 }}
+  entrypoint: >- 
+{{ include "messagequeue.entrypoint" . | b64enc | indent 4 }}
+{{- end }}

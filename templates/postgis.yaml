@@ -26,7 +26,7 @@ spec:
           command:
             - /usr/local/bin/init_postgis
           image: {{ $.Values.postgis.image }}
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           securityContext:
             runAsNonRoot: false
             readOnlyRootFilesystem: false
@@ -110,7 +110,7 @@ spec:
             successThreshold: {{ $startupProbe.successThreshold | default 1 }}
             initialDelaySeconds: {{ $startupProbe.initialDelaySeconds | default 0 }}
             timeoutSeconds: {{ $startupProbe.timeoutSeconds | default 1 }}
-            periodSeconds: {{ $startupProbe.timeoutSeconds | default 1 }}
+            periodSeconds: {{ $startupProbe.periodSeconds | default 1 }}
             exec:
               command:
                 - psql

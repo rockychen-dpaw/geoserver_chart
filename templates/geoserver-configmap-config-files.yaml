@@ -13,3 +13,7 @@ binaryData:
 {{ include "geoserver.security.filter.nginx_sso.config.xml" . | b64enc | indent 4 }}
   gwc-gs.xml: >- 
 {{ include "geoserver.gwc-gs.xml" . | b64enc | indent 4 }}
+  admin.cluster.properties: >- 
+{{ include "geoserver.admin.cluster.properties" . | b64enc | indent 4 }}
+  slave.cluster.properties: >- 
+{{ include "geoserver.slave.cluster.properties" . | b64enc | indent 4 }}

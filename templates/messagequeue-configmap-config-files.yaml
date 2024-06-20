@@ -1,0 +1,13 @@
+{{- if hasKey $.Values "messagequeue" }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $.Release.Name }}-mq-configmap-config-files
+  annotations:
+    field.cattle.io/description: messagequeue config files
+binaryData:
+  log4j2.properties: >- 
+{{ include "messagequeue.log4j2.properties" . | b64enc | indent 4 }}
+  activemq.xml: >- 
+{{ include "messagequeue.activemq.xml" . | b64enc | indent 4 }}
+{{- end }}

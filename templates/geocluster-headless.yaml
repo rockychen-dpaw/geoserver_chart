@@ -1,0 +1,24 @@
+#create a headless service for geocluster admin
+{{- if ($.Values.geoserver.clustering | default false) }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $.Release.Name }}-geocluster
+spec:
+  clusterIP: None
+  clusterIPs:
+    - None
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+    - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+    - name: default
+      port: 42
+      protocol: TCP
+      targetPort: 42
+  selector:
+    workload.user.cattle.io/workloadselector: apps.statefulset-{{ $.Release.Namespace}}-{{ $.Release.Name }}-geocluster
+  sessionAffinity: None
+  type: ClusterIP
+{{- end }}

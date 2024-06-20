@@ -1,30 +1,27 @@
-{{- if not ($.Values.geoserver.clustering | default false) }}
+{{- if ($.Values.geoserver.clustering | default false) }}
 {{- $startupProbe :=  $.Values.geoserver.startupProbe | default dict }}
 {{- $livenessProbe :=  $.Values.geoserver.livenessProbe | default dict }}
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
-  name: {{ $.Release.Name }}-geoserver
-  namespace: {{ $.Release.Namespace }}
+  name: {{ $.Release.Name }}-geocluster
 spec:
-  progressDeadlineSeconds: 600
-  replicas: 1
   selector:
     matchLabels:
-      workload.user.cattle.io/workloadselector: apps.deployment-{{ $.Release.Namespace }}-{{ $.Release.Name }}-geoserver
-  strategy:
-    rollingUpdate:
-      maxSurge: 25%
-      maxUnavailable: 25%
-    type: RollingUpdate
+      workload.user.cattle.io/workloadselector: apps.statefulset-{{ $.Release.Namespace}}-{{ $.Release.Name }}-geocluster
+  podManagementPolicy: OrderedReady
+  replicas: 2
+  revisionHistoryLimit: 10
+  serviceName: {{ $.Release.Name }}-geocluster
   template:
     metadata:
+      creationTimestamp: null
       labels:
-        workload.user.cattle.io/workloadselector: apps.deployment-{{ $.Release.Namespace }}-{{ $.Release.Name }}-geoserver
-      namespace: {{ $.Release.Namespace }}
+        #same as matchLabels
+        workload.user.cattle.io/workloadselector: apps.statefulset-{{ $.Release.Namespace}}-{{ $.Release.Name }}-geocluster
     spec:
       initContainers:
-        - name: {{ $.Release.Name }}-geoserver-init
+        - name: {{ $.Release.Name }}-geocluster-init
           image: {{ $.Values.geoserver.image }}
           imagePullPolicy: Always
           command:
@@ -34,6 +31,14 @@ spec:
               value: {{ $.Values.geoserver.adminDomain | default (cat $.Release.Name "admin.dbca.wa.gov.au") | quote }}
             - name: CLUSTERING
               value: {{ ($.Values.geoserver.clustering | default false) | toString | quote }}
+            {{- if not (hasKey $.Values.geoserver.envs "CLUSTER_DURABILITY") }}
+            - name: CLUSTER_DURABILITY
+              value: false
+            {{- end }}
+            {{- if not (hasKey $.Values.geoserver.envs "BROKER_URL") }}
+            - name: BROKER_URL
+              value: "tcp://{{ $.Release.Name }}-mq:61616"
+            {{- end }}
             {{- range $key,$value := $.Values.geoserver.envs }}
             - name: {{ $key }}
               value: {{ $value | quote }}
@@ -82,7 +87,7 @@ spec:
             {{- end }}
             {{- end }}
       containers:
-        - name: {{ $.Release.Name }}-geoserver
+        - name: {{ $.Release.Name }}-geocluster
           image: {{ $.Values.geoserver.image }}
           imagePullPolicy: Always
           command:
@@ -159,7 +164,7 @@ spec:
               mountPath: "/geoserver/settings"
             - name: scripts
               mountPath: "/geoserver/bin"
-            {{- range $type,$volumes := $.Values.geoserver.volumes}}
+            {{- range $type,$volumes := $.Values.geoserver.volumes }}
             {{- range $name,$config := $volumes}}
             {{- range $i,$mount := $config.mounts }}
             - mountPath: {{ $mount.mountPath }}
@@ -170,15 +175,24 @@ spec:
             {{- end }}  
             {{- end }}
             {{- end }}
+            {{- range $name,$config := $.Values.geoserver.volumeClaimTemplates }}
+            {{- range $i,$mount := $config.mounts }}
+            - mountPath: {{ $mount.mountPath }}
+              name: {{ $name }}
+              {{- if hasKey $mount "subPath" }}
+              subPath: {{ $mount.subPath }}
+              {{- end }}
+            {{- end }}  
+            {{- end }}
       dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
       {{- if hasKey $.Values.geoserver "groupid" }}
       securityContext:
         fsGroup: {{ $.Values.geoserver.groupid }}
       {{- end }}
-      restartPolicy: Always
-      schedulerName: default-scheduler
       terminationGracePeriodSeconds: 30
-      {{ if hasKey $.Values.geoserver "tolerations" }}
+      {{- if $.Values.geoserver.tolerations }}
       tolerations:
 {{ $.Values.geoserver.tolerations | toYaml | indent 8 }}
       {{- end }}
@@ -198,4 +212,24 @@ spec:
         persistentVolumeClaim:
           claimName: {{ $.Release.Name }}-geoserver-{{ $name }}
       {{- end }}
+  volumeClaimTemplates:
+    {{- range $name,$config := get ($.Values.geoserver.volumeClaimTemplates | default dict) "pvcs" | default dict }}
+    - apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: {{ $.Release.Name }}-geocluster-{{ $name }}
+        namespace: {{ $.Release.Namespace }}
+      spec:
+        accessModes:
+          - "ReadWriteOnce"
+        resources:
+          requests:
+            storage: {{ $config.storage}}
+        storageClassName: {{ $config.storageClassName | default "managed-csi-retain" }}
+        volumeMode: {{ $.Values.redis.volume.volumeMode | default "Filesystem" }}
+          {{- end }}
+  updateStrategy:
+    rollingUpdate:
+      partition: 0
+    type: RollingUpdate
 {{- end }}

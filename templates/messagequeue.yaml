@@ -1,0 +1,188 @@
+#messagequeue statefule
+{{- if hasKey $.Values "messagequeue" }}
+{{- $startupProbe :=  $.Values.messagequeue.startupProbe | default dict }}
+{{- $livenessProbe :=  $.Values.messagequeue.livenessProbe | default dict }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ $.Release.Name }}-mq
+spec:
+  selector:
+    matchLabels:
+      workload.user.cattle.io/workloadselector: apps.statefulset-{{ $.Release.Namespace}}-{{ $.Release.Name }}-mq
+  podManagementPolicy: OrderedReady
+  replicas: 1
+  revisionHistoryLimit: 10
+  serviceName: {{ $.Release.Name }}-mq
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        #same as matchLabels
+        workload.user.cattle.io/workloadselector: apps.statefulset-{{ $.Release.Namespace}}-{{ $.Release.Name }}-mq
+    spec:
+      initContainers:
+        - name: {{ $.Release.Name }}-mq-init
+          command:
+            - /messagequeue/bin/init_mq
+          image: {{ $.Values.messagequeue.image }}
+          imagePullPolicy: IfNotPresent
+          env:
+            {{- range $key,$value := $.Values.messagequeue.envs | default dict }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+          envFrom:
+            {{- range $name,$data := $.Values.messagequeue.secrets }}
+            - secretRef:
+                name: {{ $.Release.Name }}-mq-secret-{{ $name }}
+                optional: false
+            {{- end }}
+          securityContext:
+            runAsNonRoot: false
+            readOnlyRootFilesystem: false
+            capabilities: {}
+            privileged: false
+            allowPrivilegeEscalation: false
+            runAsUser: 0
+          volumeMounts:
+          - name: scripts
+            mountPath: "/messagequeue/bin"
+          - name: config-files
+            mountPath: "/messagequeue/config-files"
+          - name: shared-data
+            mountPath: "/shared-data"
+          {{- range $type,$volumes := $.Values.messagequeue.volumes}}
+          {{- range $name,$config := $volumes}}
+          {{- range $i,$mount := $config.mounts }}
+          - mountPath: {{ $mount.mountPath }}
+            name: {{ $name }}
+            {{- if hasKey $mount "subPath" }}
+            subPath: {{ $mount.subPath }}
+            {{- end }}
+          {{- end }}
+          {{- end }}
+          {{- end }}
+      containers:
+        - name: {{ $.Release.Name }}-mq
+          image: {{ $.Values.messagequeue.image }}
+          imagePullPolicy: IfNotPresent
+          stdin: true
+          stdinOnce: false
+          tty: true
+          workingDir: /opt/apache-activemq
+          env:
+            {{- range $key,$value := $.Values.messagequeue.envs | default dict }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+          envFrom:
+            {{- range $name,$data := $.Values.messagequeue.secrets }}
+            - secretRef:
+                name: {{ $.Release.Name }}-mq-secret-{{ $name }}
+                optional: false
+            {{- end }}
+          {{- if $.Values.messagequeue.resources }}
+          resources:
+{{ $.Values.messagequeue.resources | toYaml | indent 12 }}
+          {{- end }}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            {{- if hasKey $.Values.messagequeue "groupid" }}
+            runAsGroup: {{ $.Values.messagequeue.groupid }}
+            {{- end }}
+            runAsNonRoot: true
+            {{- if hasKey $.Values.messagequeue "userid" }}
+            runAsUser: {{ $.Values.messagequeue.userid }}
+            {{- end }}
+          volumeMounts:
+          - name: scripts
+            mountPath: "/usr/local/bin/entrypoint.sh"
+            subPath: "entrypoint"
+          - name: shared-data
+            mountPath: "/etc/passwd"
+            subPath: "passwd"
+          - name: shared-data
+            mountPath: "/etc/group"
+            subPath: "group"
+          - name: shared-data
+            mountPath: "/etc/shadow"
+            subPath: "shadow"
+          - name: shared-data
+            mountPath: "/opt/apache-activemq/conf"
+            subPath: "conf"
+          {{- range $type,$volumes := $.Values.messagequeue.volumes}}
+          {{- range $name,$config := $volumes}}
+          {{- range $i,$mount := $config.mounts }}
+          - mountPath: {{ $mount.mountPath }}
+            name: {{ $name }}
+            {{- if hasKey $mount "subPath" }}
+            subPath: {{ $mount.subPath }}
+            {{- end }}
+          {{- end }}
+          {{- end }}
+          {{- end }}
+          startupProbe:
+            failureThreshold: {{ $startupProbe.failureThreshold | default 30 }}
+            successThreshold: {{ $startupProbe.successThreshold | default 1 }}
+            initialDelaySeconds: {{ $startupProbe.initialDelaySeconds | default 0 }}
+            timeoutSeconds: {{ $startupProbe.timeoutSeconds | default 1 }}
+            periodSeconds: {{ $startupProbe.periodSeconds | default 1 }}
+            httpGet:
+              scheme: HTTP
+              port: 8161
+              path: /index.html
+          livenessProbe:
+            failureThreshold: {{ $livenessProbe.failureThreshold | default 2 }}
+            successThreshold: {{ $livenessProbe.successThreshold | default 1 }}
+            initialDelaySeconds: {{ $livenessProbe.initialDelaySeconds | default 1 }}
+            timeoutSeconds: {{ $livenessProbe.timeoutSeconds | default 1 }}
+            periodSeconds: {{ $livenessProbe.periodSeconds | default 2 }}
+            httpGet:
+              scheme: HTTP
+              port: 8161
+              path: /index.html
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      {{- if hasKey $.Values.messagequeue "groupid" }}
+      securityContext:
+        fsGroup: {{ $.Values.messagequeue.groupid }}
+      {{- end }}
+      terminationGracePeriodSeconds: 30
+      {{- if $.Values.messagequeue.tolerations }}
+      tolerations:
+{{ $.Values.messagequeue.tolerations | toYaml | indent 8 }}
+      {{- end }}
+      {{- if not (empty $.Values.messagequeue.volumes) }}
+      volumes:
+      - name: shared-data
+        emptyDir:
+          medium: ''
+          sizeLimit: 2Mi
+      - name: scripts
+        configMap:
+          name: {{ $.Release.Name }}-mq-configmap-scripts
+          optional: false
+          defaultMode: 0555
+      - name: config-files
+        configMap:
+          name: {{ $.Release.Name }}-mq-configmap-config-files
+          optional: false
+          defaultMode: 0444
+      {{- range $name,$config := $.Values.messagequeue.volumes.pvcs | default dict }}
+      - name: {{ $name }}
+        persistentVolumeClaim:
+          claimName: {{ $.Release.Name }}-mq-{{ $name }}
+      {{- end }}
+      {{- end }}
+  updateStrategy:
+    rollingUpdate:
+      partition: 0
+    type: RollingUpdate
+{{- end}}
