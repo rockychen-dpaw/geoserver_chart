@@ -1,6 +1,4 @@
 {{- define "messagequeue.init_mq" }}#!/bin/bash
-{{- if hasKey $.Values "messagequeue" }}
-
 status=0
 
 groupadd -r messagequeue -g {{ $.Values.messagequeue.groupid }}
@@ -44,6 +42,5 @@ fi
 echo "Succeed to initialize messagequeue"
 exit 0
 
-{{- end }}
 {{- end }}
 

@@ -1,5 +1,4 @@
 {{- define "messagequeue.entrypoint" }}#!/bin/bash
-{{- if hasKey $.Values "messagequeue" }}
 ################################################################################
 #  Licensed to the Apache Software Foundation (ASF) under one
 #  or more contributor license agreements.  See the NOTICE file
@@ -96,6 +95,5 @@ fi
 
 exec "$@"
 
-{{- end }}
 {{- end }}
 

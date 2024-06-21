@@ -1,0 +1,60 @@
+{{- if $.Values.geoserver.clustering | default false }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $.Release.Name }}-geoclusteradmin-ingress
+  namespace: {{ $.Release.Namespace }}
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: {{ $.Values.geoserver.adminDomain | default (cat $.Release.Name "admin.dbca.wa.gov.au") }}
+      http:
+        paths:
+          - backend:
+              service:
+                name: {{ $.Release.Name }}-geoclusteradmin
+                port:
+                  number: {{ $.Values.geoserver.port | default 8080 }}
+            path: /
+            pathType: Prefix
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $.Release.Name }}-geocluster-ingress
+  namespace: {{ $.Release.Namespace }}
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: {{ $.Values.geoserver.domain | default (cat $.Release.Name ".dbca.wa.gov.au") }}
+      http:
+        paths:
+          - backend:
+              service:
+                name: {{ $.Release.Name }}-geocluster
+                port:
+                  number: {{ $.Values.geoserver.port | default 8080 }}
+            path: /
+            pathType: Prefix
+{{- range $i,$v := untilStep 1 ($.Values.geoserver.replicas | default 2 | int ) 1 }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $.Release.Name }}-geoclusterslave{{$v}}-ingress
+  namespace: {{ $.Release.Namespace }}
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: {{ printf ($.Values.geoserver.slaveDomain | default (cat $.Release.Name "slave%d.dbca.wa.gov.au")) $v }}
+      http:
+        paths:
+          - backend:
+              service:
+                name: {{ $.Release.Name }}-geoclusterslave{{ $v }}
+                port:
+                  number: {{ $.Values.geoserver.port | default 8080 }}
+            path: /
+            pathType: Prefix
+{{- end }}
+{{- end }}

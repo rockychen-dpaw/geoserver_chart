@@ -39,13 +39,14 @@ status=$((${status} + $?))
 cp ${GEOSERVER_HOME}/settings/security.config.xml ${GEOSERVER_DATA_DIR}/security/config.xml
 status=$((${status} + $?))
 
+#create a placeholder file on geoserver data dir and then use it to check whether the cluster volume are mounted successfully
 if [[ ! -d ${GEOSERVER_DATA_DIR}/cluster ]]; then
     mkdir ${GEOSERVER_DATA_DIR}/cluster
     status=$((${status} + $?))
 fi
 
-if [[ ! -f ${GEOSERVER_DATA_DIR}/cluster/in_config_data_volume ]]; then
-    touch ${GEOSERVER_DATA_DIR}/cluster/in_config_data_volume
+if [[ ! -f ${GEOSERVER_DATA_DIR}/cluster/config_data_volume ]]; then
+    touch ${GEOSERVER_DATA_DIR}/cluster/config_data_volume
     status=$((${status} + $?))
 fi
 
@@ -54,25 +55,27 @@ if [[ ! -d ${GEOSERVER_DATA_DIR}/monitoring ]]; then
     status=$((${status} + $?))
 fi
 
-if [[ ! -f ${GEOSERVER_DATA_DIR}/monitoring/in_config_data_volume ]]; then
-    touch ${GEOSERVER_DATA_DIR}/monitoring/in_config_data_volume
+if [[ ! -f ${GEOSERVER_DATA_DIR}/monitoring/config_data_volume ]]; then
+    touch ${GEOSERVER_DATA_DIR}/monitoring/config_data_volume
     status=$((${status} + $?))
 fi
 
-if [[ ! -d ${GEOWEBCACHE_CACHE_DIR} ]]; then
-    mkdir -p ${GEOWEBCACHE_CACHE_DIR}
-    status=$((${status} + $?))
-fi
+if [[ "${GEOWEBCACHE_CACHE_DIR}" == "${GEOSERVER_DATA_DIR}/"* ]]; then
+    #gwc data folder is nested in data dir
+    if [[ ! -d ${GEOWEBCACHE_CACHE_DIR} ]]; then
+        mkdir -p ${GEOWEBCACHE_CACHE_DIR}
+        status=$((${status} + $?))
+    fi
 
-if [[ ! -f ${GEOWEBCACHE_CACHE_DIR}/in_config_data_volume ]]; then
-    touch ${GEOWEBCACHE_CACHE_DIR}/in_config_data_volume
-    status=$((${status} + $?))
-fi
+    if [[ ! -f ${GEOWEBCACHE_CACHE_DIR}/config_data_volume ]]; then
+        touch ${GEOWEBCACHE_CACHE_DIR}/config_data_volume
+        status=$((${status} + $?))
+    fi
 
-
-if [[ ${status} -ne 0 ]]; then
-    echo "Failed to initialize geoserver"
-    exit ${status}"
+    if [[ ${status} -ne 0 ]]; then
+        echo "Failed to initialize geoserver"
+        exit ${status}"
+    fi
 fi
 exit 0
 

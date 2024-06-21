@@ -11,7 +11,7 @@ spec:
   podManagementPolicy: OrderedReady
   replicas: 1
   revisionHistoryLimit: 10
-  serviceName: {{ $.Release.Name }}-borgslave
+  serviceName: {{ $.Release.Name }}-borgslave-headless
   template:
     metadata:
       creationTimestamp: null

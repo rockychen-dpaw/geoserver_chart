@@ -10,7 +10,7 @@ spec:
     matchLabels:
       workload.user.cattle.io/workloadselector: apps.statefulset-{{ $.Release.Namespace}}-{{ $.Release.Name }}-geocluster
   podManagementPolicy: OrderedReady
-  replicas: 2
+  replicas: {{ $.Values.geoserver.replicas | default 2 }}
   revisionHistoryLimit: 10
   serviceName: {{ $.Release.Name }}-geocluster
   template:
@@ -27,13 +27,9 @@ spec:
           command:
             - /geoserver/bin/init_geoserver
           env:
-            - name: GEOSERVER_CSRF_WHITELIST
-              value: {{ $.Values.geoserver.adminDomain | default (cat $.Release.Name "admin.dbca.wa.gov.au") | quote }}
-            - name: CLUSTERING
-              value: {{ ($.Values.geoserver.clustering | default false) | toString | quote }}
             {{- if not (hasKey $.Values.geoserver.envs "CLUSTER_DURABILITY") }}
             - name: CLUSTER_DURABILITY
-              value: false
+              value: "false"
             {{- end }}
             {{- if not (hasKey $.Values.geoserver.envs "BROKER_URL") }}
             - name: BROKER_URL
@@ -106,6 +102,14 @@ spec:
               value: {{ $.Values.geoserver.group | default "geoserver" }}
             - name: GEOSERVER_CSRF_WHITELIST
               value: {{ $.Values.geoserver.adminDomain | default (cat $.Release.Name "admin.dbca.wa.gov.au") | quote }}
+            {{- if not (hasKey $.Values.geoserver.envs "CLUSTER_DURABILITY") }}
+            - name: CLUSTER_DURABILITY
+              value: "false"
+            {{- end }}
+            {{- if not (hasKey $.Values.geoserver.envs "BROKER_URL") }}
+            - name: BROKER_URL
+              value: "tcp://{{ $.Release.Name }}-mq:61616"
+            {{- end }}
             {{- range $key,$value := $.Values.geoserver.envs }}
             - name: {{ $key }}
               value: {{ $value | quote }}
@@ -226,7 +230,7 @@ spec:
           requests:
             storage: {{ $config.storage}}
         storageClassName: {{ $config.storageClassName | default "managed-csi-retain" }}
-        volumeMode: {{ $.Values.redis.volume.volumeMode | default "Filesystem" }}
+        volumeMode: {{ $config.volumeMode | default "Filesystem" }}
           {{- end }}
   updateStrategy:
     rollingUpdate:

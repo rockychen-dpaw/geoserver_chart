@@ -13,7 +13,7 @@ spec:
   podManagementPolicy: OrderedReady
   replicas: 1
   revisionHistoryLimit: 10
-  serviceName: {{ $.Release.Name }}-postgis
+  serviceName: {{ $.Release.Name }}-postgis-headless
   template:
     metadata:
       creationTimestamp: null

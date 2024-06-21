@@ -2,6 +2,25 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
+  name: {{ $.Release.Name }}-geoserveradmin-ingress
+  namespace: {{ $.Release.Namespace }}
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: {{ $.Values.geoserver.adminDomain | default (cat $.Release.Name "admin.dbca.wa.gov.au") }}
+      http:
+        paths:
+          - backend:
+              service:
+                name: {{ $.Release.Name }}-geoserver
+                port:
+                  number: {{ $.Values.geoserver.port | default 8080 }}
+            path: /
+            pathType: Prefix
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
   name: {{ $.Release.Name }}-geoserver-ingress
   namespace: {{ $.Release.Namespace }}
 spec:

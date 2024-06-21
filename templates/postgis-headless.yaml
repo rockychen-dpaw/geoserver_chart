@@ -3,7 +3,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ $.Release.Name }}-postgis
+  name: {{ $.Release.Name }}-postgis-headless
 spec:
   clusterIP: None
   clusterIPs:
