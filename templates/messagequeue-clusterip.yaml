@@ -1,24 +1,21 @@
-#create a headless service for postgis
 {{- if hasKey $.Values "messagequeue" }}
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ $.Release.Name }}-mq-headless
+  name: {{ $.Release.Name }}-mq
+  namespace: {{ $.Release.Namespace }}
 spec:
-  clusterIP: None
-  clusterIPs:
-    - None
   internalTrafficPolicy: Cluster
   ipFamilies:
     - IPv4
   ipFamilyPolicy: SingleStack
   ports:
     - name: default
-      port: 42
+      port: 8161
       protocol: TCP
-      targetPort: 42
+      targetPort: 8161
   selector:
-    workload.user.cattle.io/workloadselector: apps.statefulset-{{ $.Release.Namespace}}-{{ $.Release.Name }}-mq
+    workload.user.cattle.io/workloadselector: apps.statefulset-{{ $.Release.Namespace }}-{{ $.Release.Name }}-mq
   sessionAffinity: None
   type: ClusterIP
 {{- end }}

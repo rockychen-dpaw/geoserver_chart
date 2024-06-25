@@ -34,6 +34,10 @@ spec:
             {{- if not (hasKey $.Values.geoserver.envs "BROKER_URL") }}
             - name: BROKER_URL
               value: "tcp://{{ $.Release.Name }}-mq:61616"
+            - name: CLUSTERING
+              value: "true"
+            - name: EMBEDDED_BROKER
+              value: "disabled"
             {{- end }}
             {{- range $key,$value := $.Values.geoserver.envs }}
             - name: {{ $key }}
@@ -74,10 +78,10 @@ spec:
             {{- range $type,$volumes := $.Values.geoserver.volumes}}
             {{- range $name,$config := $volumes}}
             {{- range $i,$mount := $config.mounts }}
-            - mountPath: {{ $mount.mountPath }}
+            - mountPath: {{ $mount.mountPath | quote }}
               name: {{ $name }}
               {{- if hasKey $mount "subPath" }}
-              subPath: {{ $mount.subPath }}
+              subPath: {{ $mount.subPath | quote }}
               {{- end }}
             {{- end }}  
             {{- end }}
@@ -102,13 +106,17 @@ spec:
               value: {{ $.Values.geoserver.group | default "geoserver" }}
             - name: GEOSERVER_CSRF_WHITELIST
               value: {{ $.Values.geoserver.adminDomain | default (cat $.Release.Name "admin.dbca.wa.gov.au") | quote }}
+            - name: CLUSTERING
+              value: "true"
             {{- if not (hasKey $.Values.geoserver.envs "CLUSTER_DURABILITY") }}
             - name: CLUSTER_DURABILITY
               value: "false"
+            - name: EMBEDDED_BROKER
+              value: "disabled"
             {{- end }}
             {{- if not (hasKey $.Values.geoserver.envs "BROKER_URL") }}
             - name: BROKER_URL
-              value: "tcp://{{ $.Release.Name }}-mq:61616"
+              value: "tcp://{{ $.Release.Name }}-mq-headless:61616"
             {{- end }}
             {{- range $key,$value := $.Values.geoserver.envs }}
             - name: {{ $key }}
@@ -171,10 +179,10 @@ spec:
             {{- range $type,$volumes := $.Values.geoserver.volumes }}
             {{- range $name,$config := $volumes}}
             {{- range $i,$mount := $config.mounts }}
-            - mountPath: {{ $mount.mountPath }}
+            - mountPath: {{ $mount.mountPath | quote }}
               name: {{ $name }}
               {{- if hasKey $mount "subPath" }}
-              subPath: {{ $mount.subPath }}
+              subPath: {{ $mount.subPath | quote }}
               {{- end }}
             {{- end }}  
             {{- end }}
@@ -182,7 +190,7 @@ spec:
             {{- range $name,$config := $.Values.geoserver.volumeClaimTemplates }}
             {{- range $i,$mount := $config.mounts }}
             - mountPath: {{ $mount.mountPath }}
-              name: {{ $name }}
+              name: {{ $.Release.Name }}-geocluster-{{ $name }}
               {{- if hasKey $mount "subPath" }}
               subPath: {{ $mount.subPath }}
               {{- end }}
@@ -217,7 +225,7 @@ spec:
           claimName: {{ $.Release.Name }}-geoserver-{{ $name }}
       {{- end }}
   volumeClaimTemplates:
-    {{- range $name,$config := get ($.Values.geoserver.volumeClaimTemplates | default dict) "pvcs" | default dict }}
+    {{- range $name,$config := $.Values.geoserver.volumeClaimTemplates }}
     - apiVersion: v1
       kind: PersistentVolumeClaim
       metadata:

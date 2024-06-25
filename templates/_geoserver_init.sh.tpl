@@ -9,7 +9,7 @@ if [[ ! -d ${GEOSERVER_DATA_DIR} ]]; then
     status=$?
     if [[ ${status} -ne 0 ]]; then
         echo "Failed to create geoserver data folder"
-        exit ${status}"
+        exit ${status}
     fi
 fi
 
@@ -49,7 +49,7 @@ status=$((${status} + $?))
 
 if [[ ${status} -ne 0 ]]; then
     echo "Failed to initialize geoserver"
-    exit ${status}"
+    exit ${status}
 fi
 exit 0
 

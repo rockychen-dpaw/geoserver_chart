@@ -24,10 +24,15 @@ fi
 echo "Copy extra config files"
 
 status=0
+
 if [[ ! -d "${EXTRA_CONFIG_DIR}" ]];then
   mkdir -p "${EXTRA_CONFIG_DIR}"
   status=$((${status} + $?))
 fi
+
+cp -f ${GEOSERVER_HOME}/settings/broker.xml ${EXTRA_CONFIG_DIR}/broker.xml
+status=$((${status} + $?))
+
 if [[ "${HOSTNAME}" == "{{ $.Release.Name }}-geocluster-0" ]]; then
   echo "Copy the cluster.properties for geocluster admin to ${EXTRA_CONFIG_DIR}"
   cp -f ${GEOSERVER_HOME}/settings/admin.cluster.properties ${EXTRA_CONFIG_DIR}/cluster.properties

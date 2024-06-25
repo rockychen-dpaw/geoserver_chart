@@ -13,7 +13,7 @@ spec:
   podManagementPolicy: OrderedReady
   replicas: 1
   revisionHistoryLimit: 10
-  serviceName: {{ $.Release.Name }}-mq
+  serviceName: {{ $.Release.Name }}-mq-headless
   template:
     metadata:
       creationTimestamp: null
@@ -55,10 +55,10 @@ spec:
           {{- range $type,$volumes := $.Values.messagequeue.volumes}}
           {{- range $name,$config := $volumes}}
           {{- range $i,$mount := $config.mounts }}
-          - mountPath: {{ $mount.mountPath }}
+          - mountPath: {{ $mount.mountPath | quote }}
             name: {{ $name }}
             {{- if hasKey $mount "subPath" }}
-            subPath: {{ $mount.subPath }}
+            subPath: {{ $mount.subPath | quote }}
             {{- end }}
           {{- end }}
           {{- end }}
@@ -119,10 +119,10 @@ spec:
           {{- range $type,$volumes := $.Values.messagequeue.volumes}}
           {{- range $name,$config := $volumes}}
           {{- range $i,$mount := $config.mounts }}
-          - mountPath: {{ $mount.mountPath }}
+          - mountPath: {{ $mount.mountPath | quote }}
             name: {{ $name }}
             {{- if hasKey $mount "subPath" }}
-            subPath: {{ $mount.subPath }}
+            subPath: {{ $mount.subPath | quote }}
             {{- end }}
           {{- end }}
           {{- end }}
