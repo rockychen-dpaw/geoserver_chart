@@ -20,6 +20,19 @@ spec:
         #same as matchLabels
         workload.user.cattle.io/workloadselector: apps.statefulset-{{ $.Release.Namespace}}-{{ $.Release.Name }}-geocluster
     spec:
+      {{- if and (gt ($.Values.geoserver.replicas | default 1 | int) 1 ) (get $.Values.geoserver "topologySpreadConstraints") }}
+      #only include the topology if replicas is greater than 1
+      topologySpreadConstraints:
+      - maxSkew: {{ $.Values.geoserver.topologySpreadConstraints.maxSkew | default 1 }}
+        topologyKey: {{ $.Values.geoserver.topologySpreadConstraints.topologyKey }}
+        {{- if eq ($.Values.geoserver.topologySpreadConstraints.whenUnsatisfiable | default "ScheduleAnyway") "DoNotSchedule" }}
+        minDomains: {{ $.Values.geoserver.topologySpreadConstraints.minDomains | default 1 }}
+        {{- end }}
+        whenUnsatisfiable: {{ $.Values.geoserver.topologySpreadConstraints.whenUnsatisfiable | default "ScheduleAnyway" }}
+        labelSelector:
+          matchLabels:
+            workload.user.cattle.io/workloadselector: apps.statefulset-{{ $.Release.Namespace}}-{{ $.Release.Name }}-geocluster
+      {{- end }}
       initContainers:
         - name: {{ $.Release.Name }}-geocluster-init
           image: {{ $.Values.geoserver.image }}
@@ -108,6 +121,8 @@ spec:
               value: {{ $.Values.geoserver.adminDomain | default (cat $.Release.Name "admin.dbca.wa.gov.au") | quote }}
             - name: CLUSTERING
               value: "true"
+            - name: GEOSERVER_DISABLE_STATIC_WEB_FILES
+              value: "false"
             {{- if not (hasKey $.Values.geoserver.envs "CLUSTER_DURABILITY") }}
             - name: CLUSTER_DURABILITY
               value: "false"

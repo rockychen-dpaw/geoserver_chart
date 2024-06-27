@@ -13,6 +13,15 @@ if [[ ! -d ${GEOSERVER_DATA_DIR} ]]; then
     fi
 fi
 
+if [[ ! -d ${GEOSERVER_DATA_DIR}/www ]]; then
+    mkdir -p ${GEOSERVER_DATA_DIR}/www
+    status=$?
+    if [[ ${status} -ne 0 ]]; then
+        echo "Failed to create folder ${GEOSERVER_DATA_DIR}/www"
+        exit ${status}
+    fi
+fi
+
 status=0
 
 if [[ "${GEOWEBCACHE_CACHE_DIR}" == "" ]]; then
@@ -37,6 +46,16 @@ fi
 
 if [[ ! -f ${GEOSERVER_DATA_DIR}/monitoring/config_data_volume ]]; then
     touch ${GEOSERVER_DATA_DIR}/monitoring/config_data_volume
+    status=$((${status} + $?))
+fi
+
+if [[ ! -d ${GEOSERVER_DATA_DIR}/www/server ]]; then
+    mkdir ${GEOSERVER_DATA_DIR}/www/server
+    status=$((${status} + $?))
+fi
+
+if [[ ! -f ${GEOSERVER_DATA_DIR}/www/server/config_data_volume ]]; then
+    touch ${GEOSERVER_DATA_DIR}/www/server/config_data_volume
     status=$((${status} + $?))
 fi
 

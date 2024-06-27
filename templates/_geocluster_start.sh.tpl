@@ -14,6 +14,11 @@ if [[ -f ${GEOSERVER_DATA_DIR}/monitoring/config_data_volume ]]; then
     exit 1
 fi
 
+if [[ -f ${GEOSERVER_DATA_DIR}/www/server/config_data_volume ]]; then
+    echo "Failed to mount the geoserver's monitoring folder"
+    exit 1
+fi
+
 if [[ "${GEOWEBCACHE_CACHE_DIR}" == "${GEOSERVER_DATA_DIR}/"* ]]; then
     if [[ -f ${GEOWEBCACHE_CACHE_DIR}/config_data_volume ]]; then
         echo "Failed to mount the geoserver's gwc folder"
@@ -24,6 +29,19 @@ fi
 echo "Copy extra config files"
 
 status=0
+
+if [[ ! -f "${GEOSERVER_DATA_DIR}/www/server/starttime.html" ]]; then
+    cp ${GEOSERVER_HOME}/settings/starttime.html ${GEOSERVER_DATA_DIR}/www/server
+    status=$((${status} + $?))
+fi
+
+echo "$(date '+%s')" > /tmp/geoserver_starttime
+status=$((${status} + $?))
+
+if [[ ! -f "${GEOSERVER_DATA_DIR}/www/server/starthistory.html" ]]; then
+    cp ${GEOSERVER_HOME}/settings/starthistory.html ${GEOSERVER_DATA_DIR}/www/server
+    status=$((${status} + $?))
+fi
 
 if [[ ! -d "${EXTRA_CONFIG_DIR}" ]];then
   mkdir -p "${EXTRA_CONFIG_DIR}"

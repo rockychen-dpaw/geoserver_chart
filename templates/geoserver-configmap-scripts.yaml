@@ -20,3 +20,9 @@ binaryData:
   start_geoserver: >- 
 {{ include "geoserver.start_geoserver" . | b64enc | indent 4 }}
   {{- end }}
+{{- if and ($.Values.geoserver.clustering | default false)  (gt ($.Values.geoserver.replicas | default 1) 1) (get $.Values.geoserver "restartPolicy") (get $.Values.geoserver.restartPolicy "restartSchedule") }}
+  restart_period.sh: >- 
+{{ include "geocluster.restart_period.sh" . | b64enc | indent 4 }}
+  server_restart_config.sh: >- 
+{{ include "geocluster.server_restart_config.sh" . | b64enc | indent 4 }}
+{{- end }}

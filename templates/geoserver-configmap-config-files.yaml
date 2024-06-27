@@ -17,6 +17,10 @@ binaryData:
 {{ include "geoserver.admin.cluster.properties" . | b64enc | indent 4 }}
   slave.cluster.properties: >- 
 {{ include "geoserver.slave.cluster.properties" . | b64enc | indent 4 }}
+  starttime.html: >- 
+{{ include "geoserver.starttime.html" . | b64enc | indent 4 }}
+  starthistory.html: >- 
+{{ include "geoserver.starthistory.html" . | b64enc | indent 4 }}
 {{- if ($.Values.geoserver.clustering | default false) }}
   broker.xml: >- 
 {{ include "geocluster.broker.xml" . | b64enc | indent 4 }}

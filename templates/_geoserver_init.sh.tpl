@@ -13,7 +13,27 @@ if [[ ! -d ${GEOSERVER_DATA_DIR} ]]; then
     fi
 fi
 
+if [[ ! -d ${GEOSERVER_DATA_DIR}/www/server ]]; then
+    mkdir -p ${GEOSERVER_DATA_DIR}/www/server
+    status=$?
+    if [[ ${status} -ne 0 ]]; then
+        echo "Failed to create folder ${GEOSERVER_DATA_DIR}/www/server"
+        exit ${status}
+    fi
+fi
+
 status=0
+
+if [[ ! -f "${GEOSERVER_DATA_DIR}/www/server/starttime.html" ]]; then
+    cp ${GEOSERVER_HOME}/settings/starttime.html ${GEOSERVER_DATA_DIR}/www/server
+    status=$((${status} + $?))
+fi
+
+if [[ ! -f "${GEOSERVER_DATA_DIR}/www/server/starthistory.html" ]]; then
+    cp ${GEOSERVER_HOME}/settings/starthistory.html ${GEOSERVER_DATA_DIR}/www/server
+    status=$((${status} + $?))
+fi
+
 if [[ "${GEOWEBCACHE_CACHE_DIR}" == "" ]]; then
     export GEOWEBCACHE_CACHE_DIR=${GEOSERVER_DATA_DIR}/gwc
 fi
