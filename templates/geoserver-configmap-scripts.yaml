@@ -7,22 +7,18 @@ metadata:
 binaryData:
   geoserver_startup: >- 
 {{ include "geoserver.geoserver_startup" . | b64enc | indent 4 }}
-  geoserver_liveness: >- 
-{{ include "geoserver.geoserver_liveness" . | b64enc | indent 4 }}
   {{- if ($.Values.geoserver.clustering | default false) }}
   init_geoserver: >- 
 {{ include "geocluster.init_geoserver" . | b64enc | indent 4 }}
   start_geoserver: >- 
 {{ include "geocluster.start_geoserver" . | b64enc | indent 4 }}
+  geoserver_liveness: >- 
+{{ include "geocluster.geoserver_liveness" . | b64enc | indent 4 }}
   {{- else }}
   init_geoserver: >- 
 {{ include "geoserver.init_geoserver" . | b64enc | indent 4 }}
   start_geoserver: >- 
 {{ include "geoserver.start_geoserver" . | b64enc | indent 4 }}
+  geoserver_liveness: >- 
+{{ include "geoserver.geoserver_liveness" . | b64enc | indent 4 }}
   {{- end }}
-{{- if and ($.Values.geoserver.clustering | default false)  (gt ($.Values.geoserver.replicas | default 1) 1) (get $.Values.geoserver "restartPolicy") (get $.Values.geoserver.restartPolicy "restartSchedule") }}
-  restart_period.sh: >- 
-{{ include "geocluster.restart_period.sh" . | b64enc | indent 4 }}
-  server_restart_config.sh: >- 
-{{ include "geocluster.server_restart_config.sh" . | b64enc | indent 4 }}
-{{- end }}

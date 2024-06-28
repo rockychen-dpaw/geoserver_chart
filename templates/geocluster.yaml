@@ -151,18 +151,18 @@ spec:
           startupProbe:
             failureThreshold: {{ $startupProbe.failureThreshold | default 30 }}
             successThreshold: {{ $startupProbe.successThreshold | default 1 }}
-            initialDelaySeconds: {{ $startupProbe.initialDelaySeconds | default 0 }}
-            timeoutSeconds: {{ $startupProbe.timeoutSeconds | default 1 }}
-            periodSeconds: {{ $startupProbe.periodSeconds | default 1 }}
+            initialDelaySeconds: {{ $startupProbe.initialDelaySeconds | default 30 }}
+            timeoutSeconds: {{ $startupProbe.timeoutSeconds | default 2 }}
+            periodSeconds: {{ $startupProbe.periodSeconds | default 2 }}
             exec:
               command:
                 - /geoserver/bin/geoserver_startup
           livenessProbe:
-            failureThreshold: {{ $livenessProbe.failureThreshold | default 2 }}
-            successThreshold: {{ $livenessProbe.successThreshold | default 1 }}
-            initialDelaySeconds: {{ $livenessProbe.initialDelaySeconds | default 1 }}
-            timeoutSeconds: {{ $livenessProbe.timeoutSeconds | default 1 }}
-            periodSeconds: {{ $livenessProbe.periodSeconds | default 2 }}
+            failureThreshold: 1
+            successThreshold: 1
+            initialDelaySeconds: 30
+            timeoutSeconds: {{ round (addf (mulf (sub ($.Values.geoserver.replicas | default 1) 1) 0.5) 0.5 1) }}
+            periodSeconds: {{ $startupProbe.periodSeconds | default 10 }}
             exec:
               command:
                 - /geoserver/bin/geoserver_liveness

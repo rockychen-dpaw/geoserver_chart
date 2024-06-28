@@ -56,19 +56,49 @@ fi
 
 #set geoserver next restart time
 {{- if and ($.Values.geoserver.clustering | default false)  (gt ($.Values.geoserver.replicas | default 1) 1) (get $.Values.geoserver "restartPolicy") (get $.Values.geoserver.restartPolicy "restartSchedule") }}
-source ${GEOSERVER_HOME}/bin/server_restart_config.sh
+{{- $index := 0}}
+{{- range $server,$config := $.Values.geoserver.restartPolicy.restartSchedule }}
+
+#weekday is 1 - 7, 1 is Monday
+declare -a {{ $server }}RestartDay
+{{- $index = 0}}
+  {{- range $i,$day := list "monday" "tuesday" "wednesday" "thursday" "friday" "saturday" "sunday" }}
+    {{- if has $day ($.config.restartDays | default list) }}
+      {{- $index = add $index 1 }}
+{{ $server }}RestartDay[{{$index}}]={{add $i 1}}
+    {{- end }}
+  {{- end }}
+
+declare -a {{ $server }}RestartHour
+  {{- if $config.restartHours }}
+    {{- $index = 0 }}
+    {{- range $i,$hour := until 24 }}
+      {{- if has $hour $config.restartHours }}
+        {{- $index = add $index 1 }}
+{{ $server }}RestartHour[{{$index}}]={{$hour}}
+      {{- end }}
+    {{- end }}
+  {{- else }}
+{{ $server }}RestartHour[0]={{2}}
+  {{- end }}
+{{- end }}
+
+key="server${HOSTNAME#{{ $.Release.Name }}-geocluster-*}"
+declare -n restartDays="${key}RestartDay"
+declare -n restartHours="${key}RestartHour"
+
 now=$(date '+%Y-%m-%d %H:%M:%S')
 hour=$(date -d "${now}" '+%H')
 today=$(date -d "${now}" '+%Y-%m-%d')
 
-if [[ ${#restartDay[@]} -gt 0 ]]; then
+if [[ ${#restartDays[@]} -gt 0 ]]; then
   #find next restart time
   nextHour=99
   i=0
-  while [[ $i -lt ${#restartHour[@]} ]]; do
-    if [[ ${restartHour[${i}]} -gt ${hour} ]]; then
+  while [[ $i -lt ${#restartHours[@]} ]]; do
+    if [[ ${restartHours[${i}]} -gt ${hour} ]]; then
       #need to restart later in the same day
-      nextHour=${restartHour[${i}]}
+      nextHour=${restartHours[${i}]}
       break
     else
       i=$(($i + 1))
@@ -77,15 +107,15 @@ if [[ ${#restartDay[@]} -gt 0 ]]; then
 
   if [[ ${nextHour} -eq 99 ]]; then
     #can't find a restart time in the same day
-    nextHour=${restartHour[0]}
+    nextHour=${restartHours[0]}
 
     #try to find the day of next restart
     day=$(date '+%u')
     dayOffset=99
     i=0
-    while [[ $i -lt ${#restartDay[@]} ]]; do
-      if [[ ${restartDay[${i}]} -gt ${day} ]]; then
-        dayOffset=$((${restartDay[${i}]} - ${day}))
+    while [[ $i -lt ${#restartDays[@]} ]]; do
+      if [[ ${restartDays[${i}]} -gt ${day} ]]; then
+        dayOffset=$((${restartDays[${i}]} - ${day}))
         break
       else
         i=$(($i + 1))
@@ -93,7 +123,7 @@ if [[ ${#restartDay[@]} -gt 0 ]]; then
     done
 
     if [[ ${dayOffset} -eq 99 ]]; then
-      dayOffset=$((7 - ${day} + ${restartDay[0]}))
+      dayOffset=$((7 - ${day} + ${restartDays[0]}))
     fi
 
     nextRestartTime=$(date -d "${today} ${nextHour}:00:00")
