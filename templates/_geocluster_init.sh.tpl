@@ -97,14 +97,6 @@ status=$((${status} + $?))
 cp ${GEOSERVER_HOME}/settings/security.config.xml ${GEOSERVER_DATA_DIR}/security/config.xml
 status=$((${status} + $?))
 
-#if [[ ! -d "/geoslave-data${GEOWEBCACHE_CACHE_DIR}" ]]; then
-#  mkdir -p "/geoslave-data${GEOWEBCACHE_CACHE_DIR}"
-#  status=$((${status} + $?))
-#fi
-
-#cp ${GEOSERVER_HOME}/settings/geowebcache.xml /geoslave-data${GEOWEBCACHE_CACHE_DIR}
-#status=$((${status} + $?))
-
 exit 0
 
 {{- end }}

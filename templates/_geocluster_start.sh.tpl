@@ -30,10 +30,8 @@ echo "Copy extra config files"
 
 status=0
 
-if [[ ! -f "${GEOSERVER_DATA_DIR}/www/server/starttime.html" ]]; then
-    cp ${GEOSERVER_HOME}/settings/starttime.html ${GEOSERVER_DATA_DIR}/www/server
-    status=$((${status} + $?))
-fi
+cp ${GEOSERVER_HOME}/settings/starttime.html ${GEOSERVER_DATA_DIR}/www/server
+status=$((${status} + $?))
 
 echo "$(date '+%s')" > /tmp/geoserver_starttime
 status=$((${status} + $?))
@@ -68,6 +66,20 @@ fi
 
 cp ${GEOSERVER_HOME}/settings/geowebcache.xml ${GEOWEBCACHE_CACHE_DIR}
 status=$((${status} + $?))
+
+{{- if $.Values.geoserver.healthchecklog | default false }}
+#manage  healthcheck log
+if [[ -f ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log ]]; then
+  echo "Manage the length of the healthcheck log"
+  rows=$(cat ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log | wc -l )
+  if [[ ${rows} -gt 10000 ]]; then
+    firstrow=0
+    lastrow=$((${rows} - 10000))
+    sed -i -e "${firstrow},${lastrow}d" ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
+    status=$((${status} + $?))
+  fi
+fi 
+{{- end }}
 
 if [[ ${status} -ne 0 ]]; then
     echo "Failed to initialize geoserver"

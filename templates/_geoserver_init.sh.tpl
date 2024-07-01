@@ -24,10 +24,8 @@ fi
 
 status=0
 
-if [[ ! -f "${GEOSERVER_DATA_DIR}/www/server/starttime.html" ]]; then
-    cp ${GEOSERVER_HOME}/settings/starttime.html ${GEOSERVER_DATA_DIR}/www/server
-    status=$((${status} + $?))
-fi
+cp -f  ${GEOSERVER_HOME}/settings/starttime.html ${GEOSERVER_DATA_DIR}/www/server
+status=$((${status} + $?))
 
 if [[ ! -f "${GEOSERVER_DATA_DIR}/www/server/starthistory.html" ]]; then
     cp ${GEOSERVER_HOME}/settings/starthistory.html ${GEOSERVER_DATA_DIR}/www/server
