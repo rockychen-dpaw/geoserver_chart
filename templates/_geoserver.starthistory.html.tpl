@@ -6,6 +6,10 @@
         padding-left: 10px;
         padding-right:5px;
      }
+     span{
+         font-style: italic;
+         color: blue;
+     }
 </style>
 </head>
 <body>

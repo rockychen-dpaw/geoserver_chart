@@ -73,7 +73,7 @@ if [[ -f ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log ]]; then
   echo "Manage the length of the healthcheck log"
   rows=$(cat ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log | wc -l )
   if [[ ${rows} -gt 10000 ]]; then
-    firstrow=0
+    firstrow=1
     lastrow=$((${rows} - 10000))
     sed -i -e "${firstrow},${lastrow}d" ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
     status=$((${status} + $?))

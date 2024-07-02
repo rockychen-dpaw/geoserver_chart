@@ -7,6 +7,24 @@ if [[ -f ${GEOSERVER_DATA_DIR}/www/server/nextrestarttime ]]; then
   hour=$(date -d "${now}" '+%H')
   hour="${hour#0*}"
   seconds=$(date -d "${now}" '+%s')
+
+  {{- if $.Values.geoserver.healthchecklog | default false }}
+  #manage  healthcheck log
+  if [[ -f ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log ]] && [[ ${hour} -eq 1 ]]; then
+    minute=$(date -d "${now}" '+%M')
+    if [[ ${minute} -lt 2 ]]; then
+      #only manage the healthcheck log between 1:00:00 and 1:01:59
+      rows=$(cat ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log | wc -l )
+      if [[ ${rows} -gt 10000 ]]; then
+        firstrow=1
+        lastrow=$((${rows} - 10000))
+        sed -i -e "${firstrow},${lastrow}d" ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
+        status=$((${status} + $?))
+      fi
+    fi
+  fi 
+  {{- end }}
+
   if [[ ${seconds} -ge ${nextRestartSeconds} ]]; then
     #need to restart
     {{- if $.Values.geoserver.healthchecklog | default false }}
@@ -48,7 +66,7 @@ if [[ -f ${GEOSERVER_DATA_DIR}/www/server/nextrestarttime ]]; then
         {{- else }}
         server="{{$.Release.Name}}-geoclusterslave{{$i}}"
         {{- end }}
-        wget --user ${GEOSERVER_ADMIN_USER} --password ${GEOSERVER_ADMIN_PASSWORD} --timeout=0.5 http://${server}:8080/geoserver/www/server/nextrestarttime -o /tmp/remotegeoserver_nextrestarttime.log -O /tmp/remotegeoserver_nextrestarttime
+        wget --tries=1 --user=${GEOSERVER_ADMIN_USER} --password=${GEOSERVER_ADMIN_PASSWORD} --timeout=0.5 http://${server}:8080/geoserver/www/server/nextrestarttime -o /dev/null -O /tmp/remotegeoserver_nextrestarttime
         status=$((${status} + $?))
         if [[ $status -eq 0 ]]; then
           remoteGeoserverNextRestartTime=$(cat /tmp/remotegeoserver_nextrestarttime)
@@ -61,19 +79,19 @@ if [[ -f ${GEOSERVER_DATA_DIR}/www/server/nextrestarttime ]]; then
             {{- end }}
           elif [[ ${remoteGeoserverNextRestartTime} -eq ${nextRestartSeconds} ]]; then
             index="${HOSTNAME#{{ $.Release.Name }}-geocluster-*}"
-            if [[ ${index} -lt ${i} ]]; then
+            if [[ ${index} -lt {{$i}} ]]; then
               {{- if $.Values.geoserver.healthchecklog | default false }}
-              echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Liveness: The remote geoserver(http://${server}:8080/geoserver) is online and its next restart time is $(date -d @${remoteGeoserverNextRestartTime} '+%Y-%m-%d %H:%M:%S') which is equal with the current geoserver's next restart time($(date -d @${nextRestartSeconds} '+%Y-%m-%d %H:%M:%S')), but the server index(${index}) is less than the remote geoserver index(${i}), should restart before the remote geoserver." >> ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
+              echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Liveness: The remote geoserver(http://${server}:8080/geoserver) is online and its next restart time is $(date -d @${remoteGeoserverNextRestartTime} '+%Y-%m-%d %H:%M:%S') which is equal with the current geoserver's next restart time($(date -d @${nextRestartSeconds} '+%Y-%m-%d %H:%M:%S')), but the server index(${index}) is less than the remote geoserver index({{$i}}), can restart before the remote geoserver." >> ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
               {{- end }}
             else
               status=99
               {{- if $.Values.geoserver.healthchecklog | default false }}
-              echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Liveness: The remote geoserver(http://${server}:8080/geoserver) is online and its next restart time is $(date -d @${remoteGeoserverNextRestartTime} '+%Y-%m-%d %H:%M:%S') which is equal with the current geoserver's next restart time($(date -d @${nextRestartSeconds} '+%Y-%m-%d %H:%M:%S')), but the server index(${index}) is greater than the remote geoserver index(${i}), Can't restart." >> ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
+              echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Liveness: The remote geoserver(http://${server}:8080/geoserver) is online and its next restart time is $(date -d @${remoteGeoserverNextRestartTime} '+%Y-%m-%d %H:%M:%S') which is equal with the current geoserver's next restart time($(date -d @${nextRestartSeconds} '+%Y-%m-%d %H:%M:%S')), but the server index(${index}) is greater than the remote geoserver index({{$i}}), Can't restart." >> ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
               {{- end }}
             fi
           else
             {{- if $.Values.geoserver.healthchecklog | default false }}
-            echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Liveness : The remote geoserver(http://${server}:8080/geoserver) is online and its next restart time is $(date -d @${remoteGeoserverNextRestartTime} '+%Y-%m-%d %H:%M:%S') which is later than the current geoserver's next restart time($(date -d @${nextRestartSeconds} '+%Y-%m-%d %H:%M:%S')), should restart before the remote geoserver." >> ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
+            echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Liveness : The remote geoserver(http://${server}:8080/geoserver) is online and its next restart time is $(date -d @${remoteGeoserverNextRestartTime} '+%Y-%m-%d %H:%M:%S') which is later than the current geoserver's next restart time($(date -d @${nextRestartSeconds} '+%Y-%m-%d %H:%M:%S')), can restart before the remote geoserver." >> ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
             {{- end }}
           fi
         else
@@ -86,7 +104,7 @@ if [[ -f ${GEOSERVER_DATA_DIR}/www/server/nextrestarttime ]]; then
       if [[ $status -eq 0 ]]; then
         #try to restart this geoserver
         {{- if $.Values.geoserver.healthchecklog | default false }}
-        echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Liveness: All remote geoservers are online and also their next restart time are earlier than the current geoserver's next restart time($(date -d \"${nextRestartSeconds}\" \"+%Y-%m-%d %H:%M:%S\")). Try to restart the current geoserver" >> ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
+        echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Liveness: All remote geoservers are online and also their next restart time are earlier than the current geoserver's next restart time($(date -d @${nextRestartSeconds} '+%Y-%m-%d %H:%M:%S')). Try to restart the current geoserver" >> ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
         {{- end }}
         exit 1
       else
@@ -98,7 +116,7 @@ if [[ -f ${GEOSERVER_DATA_DIR}/www/server/nextrestarttime ]]; then
   fi
 fi
 {{- end}}
-wget http://127.0.0.1:8080/geoserver/web -o /dev/null -O /dev/null
+wget --tries=1 --timeout=0.5 http://127.0.0.1:8080/geoserver/web -o /dev/null -O /dev/null
 status=$?
 if [[ ${status} -eq 0 ]]; then
   {{- if $.Values.geoserver.healthchecklog | default false }}
