@@ -1,4 +1,10 @@
 {{- define "geoserver.geoserver_startup" }}#!/bin/bash
+{{- $log_levels := dict "DISABLE" 0 "ERROR" 100 "WARNING" 200 "INFO" 300 "DEBUG" 400 }}
+{{- $log_levelname := upper ($.Values.geoserver.healthchecklog | default "DISABLE") }}
+{{- if not (hasKey $log_levels $log_levelname) }}
+{{- $log_levelname = "DISABLE" }}
+{{- end }}
+{{- $log_level := (get $log_levels $log_levelname) | int }}
 wget --tries=1 --timeout=0.5 http://127.0.0.1:8080/geoserver/web -o /dev/null -O /dev/null
 status=$?
 
@@ -92,23 +98,23 @@ if [[ $status -eq 0 ]]; then
       nextRestartSeconds=$(date -d "${nextRestartTime}" '+%s')
       sed -i "s/<span id=\"nextrestarttime\">[^<]*<\/span>/<span id=\"nextrestarttime\">${nextRestartTime}<\/span>/g" ${GEOSERVER_DATA_DIR}/www/server/starttime.html
       echo ${nextRestartSeconds} > ${GEOSERVER_DATA_DIR}/www/server/nextrestarttime
-      {{- if $.Values.geoserver.healthchecklog | default false }}
-      echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Startup : next restarttime is ${nextRestartTime}" >> ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
+      {{- if ge $log_level ((get $log_levels "INFO") | int) }}
+      echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Startup : next scheduled restart time is ${nextRestartTime}" >> ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
       {{- end }}
     else
       sed -i "s/<span id=\"nextrestarttime\">[^<]*<\/span>/<span id=\"nextrestarttime\">N\/A<\/span>/g" ${GEOSERVER_DATA_DIR}/www/server/starttime.html
       nextRestartTime="N/A"
       rm -rf ${GEOSERVER_DATA_DIR}/www/server/nextrestarttime
-      {{- if $.Values.geoserver.healthchecklog | default false }}
-      echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Startup : next restarttime is N/A" >> ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
+      {{- if ge $log_level ((get $log_levels "INFO") | int) }}
+      echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Startup : next scheduled restart time is N/A" >> ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
       {{- end }}
     fi
     {{- else }}
     sed -i "s/<span id=\"nextrestarttime\">[^<]*<\/span>/<span id=\"nextrestarttime\">N\/A<\/span>/g" ${GEOSERVER_DATA_DIR}/www/server/starttime.html
     rm -rf ${GEOSERVER_DATA_DIR}/www/server/nextrestarttime
     nextRestartTime="N/A"
-    {{- if $.Values.geoserver.healthchecklog | default false }}
-    echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Startup : next restarttime is N/A" >> ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
+    {{- if ge $log_level ((get $log_levels "INFO") | int) }}
+    echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Startup : next scheduled restart time is N/A" >> ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
     {{- end }}
     {{- end }}
 
@@ -162,11 +168,13 @@ if [[ $status -eq 0 ]]; then
     fi
 fi
 
-{{- if $.Values.geoserver.healthchecklog | default false }}
-if [[ ${status} -eq 0 ]]; then
-  echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Startup : Geoserver is ready" >> ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
-else
+{{- if ge $log_level ((get $log_levels "ERROR") | int) }}
+if [[ ${status} -gt 0 ]]; then
   echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Startup : Geoserver is not ready" >> ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
+{{- if ge $log_level ((get $log_levels "INFO") | int) }}
+else
+  echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Startup : Geoserver is ready" >> ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
+{{- end }}
 fi
 {{- end }}
 exit $status

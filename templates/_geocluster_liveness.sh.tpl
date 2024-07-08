@@ -1,4 +1,10 @@
 {{- define "geocluster.geoserver_liveness" }}#!/bin/bash
+{{- $log_levels := dict "DISABLE" 0 "ERROR" 100 "WARNING" 200 "INFO" 300 "DEBUG" 400 }}
+{{- $log_levelname := upper ($.Values.geoserver.healthchecklog | default "DISABLE") }}
+{{- if not (hasKey $log_levels $log_levelname) }}
+{{- $log_levelname = "DISABLE" }}
+{{- end }}
+{{- $log_level := (get $log_levels $log_levelname) | int }}
 {{- $livenessProbe :=  $.Values.geoserver.livenessProbe | default dict }}
 {{- if and (gt ($.Values.geoserver.replicas | default 1 | int) 1) (get $.Values.geoserver "restartPolicy") (get $.Values.geoserver.restartPolicy "restartSchedule") }}
 if [[ -f ${GEOSERVER_DATA_DIR}/www/server/nextrestarttime ]]; then
@@ -8,7 +14,7 @@ if [[ -f ${GEOSERVER_DATA_DIR}/www/server/nextrestarttime ]]; then
   hour="${hour#0*}"
   seconds=$(date -d "${now}" '+%s')
 
-  {{- if $.Values.geoserver.healthchecklog | default false }}
+  {{- if ge $log_level ((get $log_levels "ERROR") | int) }}
   #manage  healthcheck log
   if [[ -f ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log ]] && [[ ${hour} -eq 1 ]]; then
     minute=$(date -d "${now}" '+%M')
@@ -27,8 +33,8 @@ if [[ -f ${GEOSERVER_DATA_DIR}/www/server/nextrestarttime ]]; then
 
   if [[ ${seconds} -ge ${nextRestartSeconds} ]]; then
     #need to restart
-    {{- if $.Values.geoserver.healthchecklog | default false }}
-    echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Liveness : Geoserver is required to restart at $(date -d @${nextRestartSeconds} '+%Y-%m-%d %H:%M:%S')." >> ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
+    {{- if ge $log_level ((get $log_levels "ERROR") | int) }}
+    echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Liveness : Geoserver is scheduled to restart at $(date -d @${nextRestartSeconds} '+%Y-%m-%d %H:%M:%S')." >> ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
     {{- end }}
     declare -a restartPeriods
     {{- if get $.Values.geoserver.restartPolicy "restartPeriods" }}
@@ -55,7 +61,7 @@ if [[ -f ${GEOSERVER_DATA_DIR}/www/server/nextrestarttime ]]; then
     if [[ ${canRestart} -eq 1 ]]; then
       #can restart
       #check whether the other servers are online and also it has the earliest restart time
-      {{- if $.Values.geoserver.healthchecklog | default false }}
+      {{- if ge $log_level ((get $log_levels "INFO") | int) }}
       echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Liveness : check whether it is safe to restart the geoserver." >> ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
       {{- end }}
       status=0
@@ -74,43 +80,43 @@ if [[ -f ${GEOSERVER_DATA_DIR}/www/server/nextrestarttime ]]; then
             #remote geoserver should be restarted before this geoserver
             #can't restart this geoserver now
             status=99
-            {{- if $.Values.geoserver.healthchecklog | default false }}
+            {{- if ge $log_level ((get $log_levels "ERROR") | int) }}
             echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Liveness: The remote geoserver(http://${server}:8080/geoserver) is online and its next restart time is $(date -d @${remoteGeoserverNextRestartTime} '+%Y-%m-%d %H:%M:%S') which is earlier than the current geoserver's next restart time($(date -d @${nextRestartSeconds} '+%Y-%m-%d %H:%M:%S')), Can't restart." >> ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
             {{- end }}
           elif [[ ${remoteGeoserverNextRestartTime} -eq ${nextRestartSeconds} ]]; then
             index="${HOSTNAME#{{ $.Release.Name }}-geocluster-*}"
-            if [[ ${index} -lt {{$i}} ]]; then
-              {{- if $.Values.geoserver.healthchecklog | default false }}
-              echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Liveness: The remote geoserver(http://${server}:8080/geoserver) is online and its next restart time is $(date -d @${remoteGeoserverNextRestartTime} '+%Y-%m-%d %H:%M:%S') which is equal with the current geoserver's next restart time($(date -d @${nextRestartSeconds} '+%Y-%m-%d %H:%M:%S')), but the server index(${index}) is less than the remote geoserver index({{$i}}), can restart before the remote geoserver." >> ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
-              {{- end }}
-            else
+            if [[ ${index} -gt {{$i}} ]]; then
               status=99
-              {{- if $.Values.geoserver.healthchecklog | default false }}
+              {{- if ge $log_level ((get $log_levels "ERROR") | int) }}
               echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Liveness: The remote geoserver(http://${server}:8080/geoserver) is online and its next restart time is $(date -d @${remoteGeoserverNextRestartTime} '+%Y-%m-%d %H:%M:%S') which is equal with the current geoserver's next restart time($(date -d @${nextRestartSeconds} '+%Y-%m-%d %H:%M:%S')), but the server index(${index}) is greater than the remote geoserver index({{$i}}), Can't restart." >> ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
               {{- end }}
-            fi
-          else
-            {{- if $.Values.geoserver.healthchecklog | default false }}
-            echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Liveness : The remote geoserver(http://${server}:8080/geoserver) is online and its next restart time is $(date -d @${remoteGeoserverNextRestartTime} '+%Y-%m-%d %H:%M:%S') which is later than the current geoserver's next restart time($(date -d @${nextRestartSeconds} '+%Y-%m-%d %H:%M:%S')), can restart before the remote geoserver." >> ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
+            {{- if ge $log_level ((get $log_levels "ERROR") | int) }}
+            else
+              echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Liveness: The remote geoserver(http://${server}:8080/geoserver) is online and its next restart time is $(date -d @${remoteGeoserverNextRestartTime} '+%Y-%m-%d %H:%M:%S') which is equal with the current geoserver's next restart time($(date -d @${nextRestartSeconds} '+%Y-%m-%d %H:%M:%S')), but the server index(${index}) is less than the remote geoserver index({{$i}}), can restart before the remote geoserver." >> ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
             {{- end }}
-          fi
-        else
-          {{- if $.Values.geoserver.healthchecklog | default false }}
-          echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Liveness : The remote geoserver(http://${server}:8080/geoserver) is offline(status=${status})." >> ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
+            fi
+          {{- if ge $log_level ((get $log_levels "ERROR") | int) }}
+          else
+            echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Liveness : The remote geoserver(http://${server}:8080/geoserver) is online and its next restart time is $(date -d @${remoteGeoserverNextRestartTime} '+%Y-%m-%d %H:%M:%S') which is later than the current geoserver's next restart time($(date -d @${nextRestartSeconds} '+%Y-%m-%d %H:%M:%S')), can restart before the remote geoserver." >> ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
           {{- end }}
+          fi
+        {{- if ge $log_level ((get $log_levels "ERROR") | int) }}
+        else
+          echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Liveness : The remote geoserver(http://${server}:8080/geoserver) is offline(status=${status})." >> ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
+        {{- end }}
         fi
       fi
       {{- end }}
       if [[ $status -eq 0 ]]; then
         #try to restart this geoserver
-        {{- if $.Values.geoserver.healthchecklog | default false }}
+        {{- if ge $log_level ((get $log_levels "ERROR") | int) }}
         echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Liveness: All remote geoservers are online and also their next restart time are earlier than the current geoserver's next restart time($(date -d @${nextRestartSeconds} '+%Y-%m-%d %H:%M:%S')). Try to restart the current geoserver" >> ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
         {{- end }}
         exit 1
+      {{- if ge $log_level ((get $log_levels "ERROR") | int) }}
       else
-        {{- if $.Values.geoserver.healthchecklog | default false }}
         echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Liveness : It is not safe to restart the geoserver right now" >> ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
-        {{- end }}
+      {{- end }}
       fi
     fi
   fi
@@ -119,21 +125,25 @@ fi
 wget --tries=1 --timeout=0.5 http://127.0.0.1:8080/geoserver/web -o /dev/null -O /dev/null
 status=$?
 if [[ ${status} -eq 0 ]]; then
-  {{- if $.Values.geoserver.healthchecklog | default false }}
-  echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Liveness : Geoserver is online." >> ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
-  {{- end }}
   if [[ -f /tmp/geoserver_failuretimes ]]; then
     #The file "failuretimes" exists, remove  it
     rm -f /tmp/geoserver_failuretimes
+    {{- if ge $log_level ((get $log_levels "ERROR") | int) }}
+    echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Liveness : Geoserver is back to online again." >> ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
+    {{- end }}
+  {{- if ge $log_level ((get $log_levels "DEBUG") | int) }}
+  else
+    echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Liveness : Geoserver is online." >> ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
+  {{- end }}
   fi
   exit 0
 fi
-if [[ {{ $livenessProbe.failureThreshold | default 2 }} -eq 1 ]]; then
-  {{- if $.Values.geoserver.healthchecklog | default false }}
+{{- if eq ($livenessProbe.failureThreshold | default 2 | int) 1 }}
+  {{- if ge $log_level ((get $log_levels "ERROR") | int) }}
   echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Liveness : Geoserver is offline, restart" >> ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
   {{- end }}
   exit ${status}
-fi
+{{- else }}
 if [[ -f /tmp/geoserver_failuretimes ]]; then
   failureTimes=$(cat /tmp/geoserver_failuretimes)
   failureTimes=$((${failureTimes} + 1))
@@ -143,14 +153,15 @@ fi
 echo ${failureTimes} > /tmp/geoserver_failuretimes
 if [[ ${failureTimes} -ge {{ $livenessProbe.failureThreshold | default 2 }} ]]; then
   #geoserver is not available 
-  {{- if $.Values.geoserver.healthchecklog | default false }}
+  {{- if ge $log_level ((get $log_levels "ERROR") | int) }}
   echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Liveness : Geoserver is offline on the ${failureTimes}th continous check, restart" >> ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
   {{- end }}
   exit ${status}
 else
-  {{- if $.Values.geoserver.healthchecklog | default false }}
+  {{- if ge $log_level ((get $log_levels "ERROR") | int) }}
   echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Liveness : Geoserver is offline on the ${failureTimes}th continous check, need to check again." >> ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
   {{- end }}
   exit 0
 fi
+{{- end }}
 {{- end }}
