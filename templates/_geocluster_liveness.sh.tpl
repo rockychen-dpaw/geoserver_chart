@@ -110,7 +110,13 @@ if [[ -f ${GEOSERVER_DATA_DIR}/www/server/nextrestarttime ]]; then
       if [[ $status -eq 0 ]]; then
         #try to restart this geoserver
         {{- if ge $log_level ((get $log_levels "ERROR") | int) }}
-        echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Liveness: All remote geoservers are online and also their next restart time are earlier than the current geoserver's next restart time($(date -d @${nextRestartSeconds} '+%Y-%m-%d %H:%M:%S')). Try to restart the current geoserver" >> ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
+          {{- if gt ($.Values.geoserver.memoryMonitorInterval | default 0 | int) 0  }}
+        geoserverpid=$(cat /tmp/geoserverpid)
+        printf -v memoryusage "Virtual Memory: %sMB , Physical Memory: %sMB" $(ps -o vsz=,rss= ${geoserverpid} | awk '{printf "%.0f %.0f", $1/1024,$2/1024}')
+          {{- else }}
+        memoryusage=""
+          {{- end }}
+        echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Liveness: All remote geoservers are online and also their next restart time are earlier than the current geoserver's next restart time($(date -d @${nextRestartSeconds} '+%Y-%m-%d %H:%M:%S')). Try to restart the current geoserver. ${memoryusage}" >> ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
         {{- end }}
         exit 1
       {{- if ge $log_level ((get $log_levels "ERROR") | int) }}
@@ -124,23 +130,42 @@ fi
 {{- end}}
 wget --tries=1 --timeout=0.5 http://127.0.0.1:8080/geoserver/web -o /dev/null -O /dev/null
 status=$?
+{{- if ge $log_level ((get $log_levels "ERROR") | int) }}
+{{- if gt ($.Values.geoserver.memoryMonitorInterval | default 0 | int) 0  }}
+geoserverpid=$(cat /tmp/geoserverpid)
+nexttime=$(cat /tmp/memorymonitornexttime)
+if [[ $(date '+%s') -ge ${nexttime} ]] ; then
+  printf -v memoryusage "Virtual Memory: %sMB , Physical Memory: %sMB" $(ps -o vsz=,rss= ${geoserverpid} | awk '{printf "%.0f %.0f", $1/1024,$2/1024}')
+  echo "$((${nexttime} + {{- $.Values.geoserver.memoryMonitorInterval}}))" > /tmp/memorymonitornexttime
+elif [[ ${status} -gt 0 ]]; then
+  printf -v memoryusage "Virtual Memory: %sMB , Physical Memory: %sMB" $(ps -o vsz=,rss= ${geoserverpid} | awk '{printf "%.0f %.0f", $1/1024,$2/1024}')
+else
+  memoryusage=""
+fi
+{{- else }}
+memoryusage=""
+{{- end }}
+{{- end }}
 if [[ ${status} -eq 0 ]]; then
   if [[ -f /tmp/geoserver_failuretimes ]]; then
     #The file "failuretimes" exists, remove  it
     rm -f /tmp/geoserver_failuretimes
     {{- if ge $log_level ((get $log_levels "ERROR") | int) }}
-    echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Liveness : Geoserver is back to online again." >> ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
+    echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Liveness : Geoserver is back to online again. ${memoryusage}" >> ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
     {{- end }}
   {{- if ge $log_level ((get $log_levels "DEBUG") | int) }}
   else
-    echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Liveness : Geoserver is online." >> ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
+    echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Liveness : Geoserver is online. ${memoryusage}" >> ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
+  {{- else }}
+  elif [[ "$memoryusage" != "" ]]; then
+    echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Liveness : Geoserver is online. ${memoryusage}" >> ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
   {{- end }}
   fi
   exit 0
 fi
 {{- if eq ($livenessProbe.failureThreshold | default 2 | int) 1 }}
   {{- if ge $log_level ((get $log_levels "ERROR") | int) }}
-  echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Liveness : Geoserver is offline, restart" >> ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
+  echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Liveness : Geoserver is offline, restart. ${memoryusage}" >> ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
   {{- end }}
   exit ${status}
 {{- else }}
@@ -154,12 +179,12 @@ echo ${failureTimes} > /tmp/geoserver_failuretimes
 if [[ ${failureTimes} -ge {{ $livenessProbe.failureThreshold | default 2 }} ]]; then
   #geoserver is not available 
   {{- if ge $log_level ((get $log_levels "ERROR") | int) }}
-  echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Liveness : Geoserver is offline on the ${failureTimes}th continous check, restart" >> ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
+  echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Liveness : Geoserver is offline on the ${failureTimes}th continous check, restart. ${memoryusage}" >> ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
   {{- end }}
   exit ${status}
 else
   {{- if ge $log_level ((get $log_levels "ERROR") | int) }}
-  echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Liveness : Geoserver is offline on the ${failureTimes}th continous check, need to check again." >> ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
+  echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Liveness : Geoserver is offline on the ${failureTimes}th continous check, need to check again.${memoryusage}" >> ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
   {{- end }}
   exit 0
 fi

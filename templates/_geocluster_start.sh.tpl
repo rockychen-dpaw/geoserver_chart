@@ -86,6 +86,13 @@ if [[ ${status} -ne 0 ]]; then
     exit ${status}
 fi
 
+if [[ "${HOSTNAME}" == "{{ $.Release.Name }}-geocluster-0" ]]; then
+  export GEOSERVER_CSRF_WHITELIST={{ (printf "%s,%s" ($.Values.geoserver.domain | default (cat $.Release.Name ".dbca.wa.gov.au")) ($.Values.geoserver.adminDomain | default (cat $.Release.Name "admin.dbca.wa.gov.au"))) | quote }}
+else
+  slaveindex=${HOSTNAME#*{{- printf "%s-geocluster-" $.Release.Name }}}
+  export GEOSERVER_CSRF_WHITELIST="$(printf {{ (printf "%s,%s" ($.Values.geoserver.domain | default (cat $.Release.Name ".dbca.wa.gov.au")) ($.Values.geoserver.slaveDomain | default "kmislave%d-uat.dbca.wa.gov.au")) | quote }} ${slaveindex})"
+fi
+echo "GEOSERVER_CSRF_WHITELIST=${GEOSERVER_CSRF_WHITELIST}"
 echo "Begin to start geoserver"
 /scripts/entrypoint.sh
 exit $?

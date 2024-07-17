@@ -117,8 +117,6 @@ spec:
               value: {{ $.Values.geoserver.user | default "geoserver" }}
             - name: GROUP_NAME
               value: {{ $.Values.geoserver.group | default "geoserver" }}
-            - name: GEOSERVER_CSRF_WHITELIST
-              value: {{ $.Values.geoserver.adminDomain | default (cat $.Release.Name "admin.dbca.wa.gov.au") | quote }}
             - name: CLUSTERING
               value: "true"
             - name: GEOSERVER_DISABLE_STATIC_WEB_FILES
