@@ -36,4 +36,25 @@ spec:
                   number: {{ $.Values.geoserver.port | default 8080 }}
             path: /
             pathType: Prefix
+{{- range $i,$domain := $.Values.geoserver.otherDomains | default list }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $.Release.Name }}-geocluster-{{ $domain | replace "." "-" }}-ingress
+  namespace: {{ $.Release.Namespace }}
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: {{ $domain }}
+      http:
+        paths:
+          - backend:
+              service:
+                name: {{ $.Release.Name }}-geocluster
+                port:
+                  number: {{ $.Values.geoserver.port | default 8080 }}
+            path: /
+            pathType: Prefix
+{{- end }}
 {{- end }}
