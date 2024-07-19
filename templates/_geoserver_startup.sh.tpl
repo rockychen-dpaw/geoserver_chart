@@ -169,18 +169,24 @@ if [[ $status -eq 0 ]]; then
 fi
 
 {{- if ge $log_level ((get $log_levels "ERROR") | int) }}
+  {{- if gt ($.Values.geoserver.memoryMonitorInterval | default 0 | int) 0  }}
+geoserverpid=$(ps -aux | grep "java" | grep "tomcat"|awk -F ' ' '{print $2}')
+if [[ "${geoserverpid}" == "" ]]; then
+  memoryusage=""
+else
+  printf -v memoryusage "%%CPU: %s , Virtual Memory: %sMB , Physical Memory: %sMB" $(ps -o %cpu=,vsz=,rss= ${geoserverpid} | awk '{printf "%.1f %.0f %.0f",$1,$2/1024,$3/1024}')
+fi
+  {{- else }}
+memoryusage=""
+  {{- end }}
 if [[ ${status} -gt 0 ]]; then
-  echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Startup : Geoserver is not ready" >> ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
+  echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Startup : Geoserver is not ready. ${memoryusage}" >> ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
 else
   {{- if gt ($.Values.geoserver.memoryMonitorInterval | default 0 | int) 0  }}
-  geoserverpid=$(ps -aux | grep "java" | grep "tomcat"|awk -F ' ' '{print $2}')
   echo ${geoserverpid} > /tmp/geoserverpid
-  printf -v memoryusage "Virtual Memory: %sMB , Physical Memory: %sMB" $(ps -o vsz=,rss= ${geoserverpid} | awk '{printf "%.0f %.0f", $1/1024,$2/1024}')
-  echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Startup : Geoserver is ready. ${memoryusage}" >> ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
   echo "$(date -d '+{{- $.Values.geoserver.memoryMonitorInterval}} seconds' '+%s')" > /tmp/memorymonitornexttime
-  {{- else }}
-  echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Startup : Geoserver is ready." >> ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
   {{- end }}
+  echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Startup : Geoserver is ready. ${memoryusage}" >> ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
 fi
 {{- end }}
 exit $status

@@ -112,7 +112,7 @@ if [[ -f ${GEOSERVER_DATA_DIR}/www/server/nextrestarttime ]]; then
         {{- if ge $log_level ((get $log_levels "ERROR") | int) }}
           {{- if gt ($.Values.geoserver.memoryMonitorInterval | default 0 | int) 0  }}
         geoserverpid=$(cat /tmp/geoserverpid)
-        printf -v memoryusage "Virtual Memory: %sMB , Physical Memory: %sMB" $(ps -o vsz=,rss= ${geoserverpid} | awk '{printf "%.0f %.0f", $1/1024,$2/1024}')
+        printf -v memoryusage "%%CPU: %s , Virtual Memory: %sMB , Physical Memory: %sMB" $(ps -o %cpu=,vsz=,rss= ${geoserverpid} | awk '{printf "%.1f %.0f %.0f",$1,$2/1024,$3/1024}')
           {{- else }}
         memoryusage=""
           {{- end }}
@@ -135,10 +135,10 @@ status=$?
 geoserverpid=$(cat /tmp/geoserverpid)
 nexttime=$(cat /tmp/memorymonitornexttime)
 if [[ $(date '+%s') -ge ${nexttime} ]] ; then
-  printf -v memoryusage "Virtual Memory: %sMB , Physical Memory: %sMB" $(ps -o vsz=,rss= ${geoserverpid} | awk '{printf "%.0f %.0f", $1/1024,$2/1024}')
+  printf -v memoryusage "%%CPU: %s , Virtual Memory: %sMB , Physical Memory: %sMB" $(ps -o %cpu=,vsz=,rss= ${geoserverpid} | awk '{printf "%.1f %.0f %.0f",$1,$2/1024,$3/1024}')
   echo "$((${nexttime} + {{- $.Values.geoserver.memoryMonitorInterval}}))" > /tmp/memorymonitornexttime
 elif [[ ${status} -gt 0 ]]; then
-  printf -v memoryusage "Virtual Memory: %sMB , Physical Memory: %sMB" $(ps -o vsz=,rss= ${geoserverpid} | awk '{printf "%.0f %.0f", $1/1024,$2/1024}')
+  printf -v memoryusage "%%CPU: %s , Virtual Memory: %sMB , Physical Memory: %sMB" $(ps -o %cpu=,vsz=,rss= ${geoserverpid} | awk '{printf "%.1f %.0f %.0f",$1,$2/1024,$3/1024}')
 else
   memoryusage=""
 fi
