@@ -1,3 +1,4 @@
+{{- if hasKey $.Values "borgslave" }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -7,3 +8,4 @@ metadata:
 binaryData:
   start_sync: >- 
 {{ include "borgslave.start_sync" . | b64enc | indent 4 }}
+{{- end}}

@@ -1,5 +1,5 @@
 {{- define "postgis.init_postgis" }}#!/bin/bash
-{{- range $name,$config := $.Values.postgis.volumes.pvcs }}
+{{- range $name,$config := get ($.Values.postgis.volumes | default dict) "pvcs" | default dict}}
 {{- range $i,$mount := $config.mounts }}
 echo "Change the ownership and permission of the path '{{ $mount.mountPath }}'"
 chown -R postgres:postgres {{ $mount.mountPath }}

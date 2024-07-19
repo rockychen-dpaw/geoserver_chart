@@ -1,6 +1,6 @@
 {{- if hasKey $.Values "postgis" }}
 {{- $count := 0 }}
-{{- range $name,$config := get ($.Values.postgis.volumes | default dict) "pvcs" }}
+{{- range $name,$config := get ($.Values.postgis.volumes | default dict) "pvcs" | default dict}}
     {{- $count = add $count 1}}
 {{- end }}
 

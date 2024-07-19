@@ -72,7 +72,7 @@ if [[ -f ${GEOSERVER_DATA_DIR}/www/server/nextrestarttime ]]; then
         {{- else }}
         server="{{$.Release.Name}}-geoclusterslave{{$i}}"
         {{- end }}
-        wget --tries=1 --user=${GEOSERVER_ADMIN_USER} --password=${GEOSERVER_ADMIN_PASSWORD} --timeout=0.5 http://${server}:8080/geoserver/www/server/nextrestarttime -o /dev/null -O /tmp/remotegeoserver_nextrestarttime
+        wget --tries=1 --timeout={{$.Values.geoserver.liveCheckTimeout | default 0.5 }} http://${server}:8080/geoserver/www/server/nextrestarttime -o /dev/null -O /tmp/remotegeoserver_nextrestarttime
         status=$((${status} + $?))
         if [[ $status -eq 0 ]]; then
           remoteGeoserverNextRestartTime=$(cat /tmp/remotegeoserver_nextrestarttime)
@@ -128,7 +128,7 @@ if [[ -f ${GEOSERVER_DATA_DIR}/www/server/nextrestarttime ]]; then
   fi
 fi
 {{- end}}
-wget --tries=1 --timeout=0.5 http://127.0.0.1:8080/geoserver/web -o /dev/null -O /dev/null
+wget --tries=1 --timeout={{$.Values.geoserver.liveCheckTimeout | default 0.5 }} http://127.0.0.1:8080/geoserver/www/server/starttime.html -o /dev/null -O /dev/null
 status=$?
 {{- if ge $log_level ((get $log_levels "ERROR") | int) }}
 {{- if gt ($.Values.geoserver.memoryMonitorInterval | default 0 | int) 0  }}

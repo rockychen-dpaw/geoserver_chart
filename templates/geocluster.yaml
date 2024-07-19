@@ -40,18 +40,16 @@ spec:
           command:
             - /geoserver/bin/init_geoserver
           env:
-            {{- if not (hasKey $.Values.geoserver.envs "CLUSTER_DURABILITY") }}
             - name: CLUSTER_DURABILITY
               value: "false"
-            {{- end }}
             {{- if not (hasKey $.Values.geoserver.envs "BROKER_URL") }}
             - name: BROKER_URL
-              value: "tcp://{{ $.Release.Name }}-mq:61616"
+              value: "tcp://{{ $.Release.Name }}-mq-headless:61616"
+            {{- end }}
             - name: CLUSTERING
               value: "true"
             - name: EMBEDDED_BROKER
               value: "disabled"
-            {{- end }}
             {{- range $key,$value := $.Values.geoserver.envs }}
             - name: {{ $key }}
               value: {{ $value | quote }}
@@ -121,12 +119,10 @@ spec:
               value: "true"
             - name: GEOSERVER_DISABLE_STATIC_WEB_FILES
               value: "false"
-            {{- if not (hasKey $.Values.geoserver.envs "CLUSTER_DURABILITY") }}
             - name: CLUSTER_DURABILITY
               value: "false"
             - name: EMBEDDED_BROKER
               value: "disabled"
-            {{- end }}
             {{- if not (hasKey $.Values.geoserver.envs "BROKER_URL") }}
             - name: BROKER_URL
               value: "tcp://{{ $.Release.Name }}-mq-headless:61616"
@@ -159,7 +155,7 @@ spec:
             failureThreshold: 1
             successThreshold: 1
             initialDelaySeconds: 30
-            timeoutSeconds: {{ round (addf (mulf (sub ($.Values.geoserver.replicas | default 1) 1) 0.6) 0.6 1) 0 | int}}
+            timeoutSeconds: {{ ceil (addf (mulf (sub ($.Values.geoserver.replicas | default 1) 1) ($.Values.geoserver.liveCheckTimeout | default 0.5)) ($.Values.geoserver.liveCheckTimeout | default 0.5) 1) | int}}
             periodSeconds: {{ $livenessProbe.periodSeconds | default 10 }}
             exec:
               command:

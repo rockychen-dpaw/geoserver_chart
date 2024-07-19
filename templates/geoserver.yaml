@@ -30,8 +30,6 @@ spec:
           command:
             - /geoserver/bin/init_geoserver
           env:
-            - name: GEOSERVER_CSRF_WHITELIST
-              value: {{ $.Values.geoserver.adminDomain | default (cat $.Release.Name "admin.dbca.wa.gov.au") | quote }}
             - name: CLUSTERING
               value: {{ ($.Values.geoserver.clustering | default false) | toString | quote }}
             {{- range $key,$value := $.Values.geoserver.envs }}
@@ -99,8 +97,6 @@ spec:
               value: {{ $.Values.geoserver.user | default "geoserver" }}
             - name: GROUP_NAME
               value: {{ $.Values.geoserver.group | default "geoserver" }}
-            - name: GEOSERVER_CSRF_WHITELIST
-              value: {{ $.Values.geoserver.adminDomain | default (cat $.Release.Name "admin.dbca.wa.gov.au") | quote }}
             {{- range $key,$value := $.Values.geoserver.envs }}
             - name: {{ $key }}
               value: {{ $value | quote }}

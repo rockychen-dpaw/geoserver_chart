@@ -5,7 +5,7 @@
 {{- $log_levelname = "DISABLE" }}
 {{- end }}
 {{- $log_level := (get $log_levels $log_levelname) | int }}
-wget --tries=1 --timeout=0.5 http://127.0.0.1:8080/geoserver/web -o /dev/null -O /dev/null
+wget --tries=1 --timeout={{$.Values.geoserver.liveCheckInterval | default 0.5 }} http://127.0.0.1:8080/geoserver/web -o /dev/null -O /dev/null
 status=$?
 
 #set geoserver starttime
