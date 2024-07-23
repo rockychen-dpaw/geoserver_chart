@@ -32,6 +32,13 @@ spec:
         paths:
           - backend:
               service:
+                name: {{ $.Release.Name }}-geoclusteradmin
+                port:
+                  number: {{ $.Values.geoserver.port | default 8080 }}
+            path: /geoserver/web
+            pathType: Prefix
+          - backend:
+              service:
                 name: {{ $.Release.Name }}-geocluster
                 port:
                   number: {{ $.Values.geoserver.port | default 8080 }}
@@ -50,6 +57,13 @@ spec:
     - host: {{ $.Values.geoserver.domain | default (printf "%s.dbca.wa.gov.au" $.Release.Name) }}
       http:
         paths:
+          - backend:
+              service:
+                name: {{ $.Release.Name }}-geoclusteradmin
+                port:
+                  number: {{ $.Values.geoserver.port | default 8080 }}
+            path: /geoserver/web
+            pathType: Prefix
           - backend:
               service:
                 name: {{ $.Release.Name }}-geocluster

@@ -14,13 +14,9 @@ fi
 
 mkdir /tmp/_helm_deploy
 
-cp -rf ${helm_dir}/* /tmp/_helm_deploy
-
-#remove all comments lines
-sed -i -E '/^\s*#.*/d' /tmp/_helm_deploy/templates/*
-
-#remove all comments in a line
-sed -i -E 's/#.*$//g' /tmp/_helm_deploy/templates/*
+cp -rf ${helm_dir}/Chart.yaml /tmp/_helm_deploy
+cp -rf ${helm_dir}/templates /tmp/_helm_deploy
+cp -rf ${helm_dir}/values*.yaml /tmp/_helm_deploy
 
 echo "helm $@ /tmp/_helm_deploy"
 helm $@ /tmp/_helm_deploy
