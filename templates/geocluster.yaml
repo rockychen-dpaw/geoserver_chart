@@ -23,15 +23,17 @@ spec:
       {{- if and (gt ($.Values.geoserver.replicas | default 1 | int) 1 ) (get $.Values.geoserver "topologySpreadConstraints") }}
       #only include the topology if replicas is greater than 1
       topologySpreadConstraints:
-      - maxSkew: {{ $.Values.geoserver.topologySpreadConstraints.maxSkew | default 1 }}
-        topologyKey: {{ $.Values.geoserver.topologySpreadConstraints.topologyKey }}
-        {{- if eq ($.Values.geoserver.topologySpreadConstraints.whenUnsatisfiable | default "ScheduleAnyway") "DoNotSchedule" }}
-        minDomains: {{ $.Values.geoserver.topologySpreadConstraints.minDomains | default 1 }}
+      {{- range $i,$constraint := $.Values.geoserver.topologySpreadConstraints }}
+      - maxSkew: {{ $constraint.maxSkew | default 1 | int }}
+        topologyKey: {{ $constraint.topologyKey }}
+        {{- if eq ($constraint.whenUnsatisfiable | default "ScheduleAnyway") "DoNotSchedule" }}
+        minDomains: {{ $constraint.minDomains | default 1 | int }}
         {{- end }}
-        whenUnsatisfiable: {{ $.Values.geoserver.topologySpreadConstraints.whenUnsatisfiable | default "ScheduleAnyway" }}
+        whenUnsatisfiable: {{ $constraint.whenUnsatisfiable | default "ScheduleAnyway" }}
         labelSelector:
           matchLabels:
             workload.user.cattle.io/workloadselector: apps.statefulset-{{ $.Release.Namespace}}-{{ $.Release.Name }}-geocluster
+      {{- end }}
       {{- end }}
       initContainers:
         - name: {{ $.Release.Name }}-geocluster-init
@@ -216,6 +218,10 @@ spec:
       {{- if $.Values.geoserver.tolerations }}
       tolerations:
 {{ $.Values.geoserver.tolerations | toYaml | indent 8 }}
+      {{- end }}
+      {{- if $.Values.geoserver.nodeSelector }}
+      nodeSelector:
+{{ $.Values.geoserver.nodeSelector | toYaml | indent 8 }}
       {{- end }}
       volumes:
       - name: config-files
