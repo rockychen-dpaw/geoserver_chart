@@ -116,7 +116,7 @@ if [[ -f ${GEOSERVER_DATA_DIR}/www/server/nextrestarttime ]]; then
           {{- else }}
         memoryusage=""
           {{- end }}
-        echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Liveness: All remote geoservers are online and also their next restart time are earlier than the current geoserver's next restart time($(date -d @${nextRestartSeconds} '+%Y-%m-%d %H:%M:%S')). Try to restart the current geoserver. ${memoryusage}" >> ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
+        echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Liveness: All remote geoservers are online and also their next restart time are later than the current geoserver's next restart time($(date -d @${nextRestartSeconds} '+%Y-%m-%d %H:%M:%S')). Try to restart the current geoserver. ${memoryusage}" >> ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
         {{- end }}
         exit 1
       {{- if ge $log_level ((get $log_levels "ERROR") | int) }}

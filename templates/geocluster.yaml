@@ -156,7 +156,7 @@ spec:
           livenessProbe:
             failureThreshold: 1
             successThreshold: 1
-            initialDelaySeconds: 30
+            initialDelaySeconds: {{ $livenessProbe.initialDelaySeconds | default 10 }}
             timeoutSeconds: {{ ceil (addf (mulf (sub ($.Values.geoserver.replicas | default 1) 1) ($.Values.geoserver.liveCheckTimeout | default 0.5)) ($.Values.geoserver.liveCheckTimeout | default 0.5) 1) | int}}
             periodSeconds: {{ $livenessProbe.periodSeconds | default 10 }}
             exec:
