@@ -24,7 +24,7 @@ fi
 
 status=0
 
-cp -f  ${GEOSERVER_HOME}/settings/starttime.html ${GEOSERVER_DATA_DIR}/www/server
+cp -f  ${GEOSERVER_HOME}/settings/serverinfo.html ${GEOSERVER_DATA_DIR}/www/server
 status=$((${status} + $?))
 
 if [[ ! -f "${GEOSERVER_DATA_DIR}/www/server/starthistory.html" ]]; then
@@ -63,6 +63,10 @@ fi
 cp ${GEOSERVER_HOME}/settings/security.filter.nginx_sso.config.xml ${GEOSERVER_DATA_DIR}/security/filter/nginx_sso/config.xml
 status=$((${status} + $?))
 cp ${GEOSERVER_HOME}/settings/security.config.xml ${GEOSERVER_DATA_DIR}/security/config.xml
+status=$((${status} + $?))
+
+#setup index page
+/geoserver/bin/setup_index_page
 status=$((${status} + $?))
 
 if [[ ${status} -ne 0 ]]; then

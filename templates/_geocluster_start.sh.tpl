@@ -26,11 +26,14 @@ if [[ "${GEOWEBCACHE_CACHE_DIR}" == "${GEOSERVER_DATA_DIR}/"* ]]; then
     fi
 fi
 
-echo "Copy extra config files"
-
 status=0
 
-cp ${GEOSERVER_HOME}/settings/starttime.html ${GEOSERVER_DATA_DIR}/www/server
+#setup index page
+/geoserver/bin/setup_index_page
+status=$((${status} + $?))
+
+echo "Copy extra config files"
+cp ${GEOSERVER_HOME}/settings/serverinfo.html ${GEOSERVER_DATA_DIR}/www/server
 status=$((${status} + $?))
 
 echo "$(date '+%s')" > /tmp/geoserver_starttime
@@ -67,15 +70,15 @@ fi
 cp ${GEOSERVER_HOME}/settings/geowebcache.xml ${GEOWEBCACHE_CACHE_DIR}
 status=$((${status} + $?))
 
-{{- if $.Values.geoserver.healthchecklog | default false }}
-#manage  healthcheck log
-if [[ -f ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log ]]; then
-  echo "Manage the length of the healthcheck log"
-  rows=$(cat ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log | wc -l )
+{{- if $.Values.geoserver.liveness | default false }}
+#manage  liveness log
+if [[ -f ${GEOSERVER_DATA_DIR}/www/server/liveness.log ]]; then
+  echo "Manage the length of the liveness log"
+  rows=$(cat ${GEOSERVER_DATA_DIR}/www/server/liveness.log | wc -l )
   if [[ ${rows} -gt 10000 ]]; then
     firstrow=1
     lastrow=$((${rows} - 10000))
-    sed -i -e "${firstrow},${lastrow}d" ${GEOSERVER_DATA_DIR}/www/server/healthcheck.log
+    sed -i -e "${firstrow},${lastrow}d" ${GEOSERVER_DATA_DIR}/www/server/liveness.log
     status=$((${status} + $?))
   fi
 fi 

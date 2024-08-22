@@ -28,6 +28,31 @@ spec:
           env:
             - name: SLAVE_NAME
               value: {{ $.Release.Name | quote }}
+            - name: RELEASE_TIME
+            {{- if eq ($.Values.borgslave.releaseTime | default "")  "" }}
+              value: {{ now | date "2006-01-02T15:04:05" | quote }}
+            {{- else }}
+              value: {{ $.Values.borgslave.releaseTime | quote }}
+            {{- end }}
+            {{- if ($.Values.geoserver.clustering | default false) }}
+            - name: GEOSERVER_URL
+              {{- $urls := "" }}
+              {{- range $i,$v := until ($.Values.geoserver.replicas | default 2 | int ) }}
+                {{- if eq $v 0 }}
+                  {{- $urls = printf "http://%s-geoclusteradmin:%d/geoserver" $.Release.Name ($.Values.geoserver.port | default 8080 | int)}}
+                {{- else }}
+                  {{- $urls = printf "%s,http://%s-geoclusterslave%d:%d/geoserver" $urls $.Release.Name $v ($.Values.geoserver.port | default 8080 | int) }}
+                {{- end }}
+              {{- end }}
+              value: {{ $urls | quote }}
+            - name: GEOSERVER_CLUSTERING
+              value: "True"
+            {{- else }}
+            - name: GEOSERVER_URL
+              value: "http://{{$.Release.Name}}-geoserver:{{ $.Values.geoserver.port | default 8080 }}/geoserver"
+            - name: GEOSERVER_CLUSTERING
+              value: "False"
+            {{- end }}
             {{- range $key,$value := $.Values.borgslave.envs | default dict }}
             - name: {{ $key }}
               value: {{ $value | quote }}

@@ -58,6 +58,12 @@ spec:
           image: {{ $.Values.postgis.image }}
           imagePullPolicy: Always
           env:
+            - name: RELEASE_TIME
+            {{- if eq ($.Values.postgis.releaseTime | default "")  "" }}
+              value: {{ now | date "2006-01-02T15:04:05" | quote }}
+            {{- else }}
+              value: {{ $.Values.postgis.releaseTime | quote }}
+            {{- end }}
             {{- range $key,$value := $.Values.postgis.envs | default dict }}
             - name: {{ $key }}
               value: {{ $value | quote }}

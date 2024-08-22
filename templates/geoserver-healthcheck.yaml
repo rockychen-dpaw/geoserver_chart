@@ -1,0 +1,121 @@
+{{- if $.Values.geoserverHealthcheck }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  {{- if ($.Values.geoserver.clustering | default false) }}
+  name: {{ $.Release.Name}}-geocluster-healthcheck
+  {{- else }}
+  name: {{ $.Release.Name}}-geoserver-healthcheck
+  {{- end }}
+  namespace: {{ $.Release.Namespace }}
+spec:
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    metadata:
+      namespace: {{ $.Release.Namespace }}
+    spec:
+      template:
+        spec:
+          affinity: {}
+          containers:
+            - env:
+                - name: REPORT_HOME
+                  value: /app/reports
+                - name: RELEASE_TIME
+                {{- if eq ($.Values.geoserverHealthcheck.releaseTime | default "")  "" }}
+                  value: {{ now | date "2006-01-02T15:04:05" | quote }}
+                {{- else }}
+                  value: {{ $.Values.geoserverHealthcheck.releaseTime | quote }}
+                {{- end }}
+                {{- if ($.Values.geoserver.clustering | default false) }}
+                  {{- if $.Values.geoserverHealthcheck.checkAllGeoservers }}
+                - name: GEOSERVER_URLS
+                    {{- $urls := "" }}
+                    {{- range $i,$v := until ($.Values.geoserver.replicas | default 2 | int ) }}
+                      {{- if eq $v 0 }}
+                        {{- $urls = printf "%s-geocluster-%d=http://%s-geoclusteradmin:%d/geoserver" $.Release.Name $v $.Release.Name ($.Values.geoserver.port | default 8080 | int)}}
+                      {{- else }}
+                        {{- $urls = printf "%s,%s-geocluster-%d=http://%s-geoclusterslave%d:%d/geoserver" $urls $.Release.Name $v $.Release.Name $v ($.Values.geoserver.port | default 8080 | int)}}
+                      {{- end }}
+                    {{- end }}
+                  value: {{ $urls | quote }}
+                  {{- else }}
+                - name: GEOSERVER_URLS
+                  value: {{ (printf "%s-geocluster-0=http://%s-geoclusteradmin:%d/geoserver" $.Release.Name $.Release.Name ($.Values.geoserver.port | default 8080 | int)) | quote}}
+                  {{- end }}
+                {{- else }}
+                - name: GEOSERVER_NAME
+                  value: {{$.Release.Name}}-geoserver
+                - name: GEOSERVER_URL
+                  value: "http://{{$.Release.Name}}-geoserver:{{ $.Values.geoserver.port | default 8080 }}/geoserver"
+                {{- end }}
+                {{- range $key,$value := $.Values.geoserverHealthcheck.envs | default dict }}
+                - name: {{ $key }}
+                  value: {{ $value | quote }}
+                {{- end }}
+              envFrom:
+                {{- range $name,$data := $.Values.geoserverHealthcheck.secrets }}
+                - secretRef:
+                    name: {{ $.Release.Name }}-geoserver-healthcheck-secret-{{ $name }}
+                    optional: false
+                {{- end }}
+                {{- range $name,$data := $.Values.geoserverHealthcheck.configmaps }}
+                - configMapRef:
+                    name: {{ $.Release.Name }}-geoserver-healthcheck-configmap-{{ $name }}
+                    optional: false
+                {{- end }}
+              image: {{ $.Values.geoserverHealthcheck.image}}
+              imagePullPolicy: Always
+              {{- if ($.Values.geoserver.clustering | default false) }}
+              name: {{ $.Release.Name}}-geocluster-healthcheck
+              {{- else }}
+              name: {{ $.Release.Name}}-geoserver-healthcheck
+              {{- end }}
+              {{- if hasKey $.Values.geoserverHealthcheck "resources" }}
+              resources:
+{{ $.Values.geoserver.resources | toYaml | indent 16 }}
+              {{- end }}
+              stdin: true
+              terminationMessagePath: /dev/termination-log
+              terminationMessagePolicy: File
+              tty: true
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop:
+                    - ALL
+                {{- if hasKey $.Values.geoserver "groupid" }}
+                runAsGroup: {{ $.Values.geoserver.groupid }}
+                {{- end }}
+                {{- if hasKey $.Values.geoserver "userid" }}
+                runAsUser: {{ $.Values.geoserver.userid }}
+                runAsNonRoot: true
+                {{- else}}
+                runAsNonRoot: false
+                {{- end }}
+              workingDir: /app
+              volumeMounts:
+                - name: report-data
+                  mountPath: /app/reports
+          dnsPolicy: ClusterFirst
+          {{- if hasKey $.Values.geoserverHealthcheck "imagepull" }}
+          imagePullSecrets:
+            - name: {{ $.Release.Name }}-geoserver-healthcheck-secret-imagepull
+          {{- end }}
+          restartPolicy: Never
+          {{- if hasKey $.Values.geoserverHealthcheck "groupid" }}
+          securityContext:
+            fsGroup: {{ $.Values.geoserverHealthcheck.groupid }}
+          {{- end }}
+          schedulerName: default-scheduler
+          terminationGracePeriodSeconds: 30
+          volumes:
+            - name: report-data
+              persistentVolumeClaim:
+                claimName: {{ $.Release.Name }}-geoserver-healthcheck-report-data
+
+  schedule: {{ $.Values.geoserverHealthcheck.schedule }}
+  successfulJobsHistoryLimit: {{ $.Values.geoserverHealthcheck.successfulJobsHistoryLimit | default 3 }}
+  failedJobsHistoryLimit: {{ $.Values.geoserverHealthcheck.failedJobsHistoryLimit | default 1 }}
+  suspend: false
+{{- end }}

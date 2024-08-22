@@ -1,0 +1,15 @@
+{{- if hasKey $.Values "geoserverHealthcheck" }}
+{{- $config := $.Values.geoserverHealthcheck.volume }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $.Release.Name }}-geoserver-healthcheck-report-data
+spec:
+  accessModes:
+    - {{ $config.accessMode | default "ReadWriteOnce" }}
+  resources:
+    requests:
+      storage: {{ $config.storage}}
+  storageClassName: {{ $config.storageClassName | default "managed-csi-retain" }}
+  volumeMode: {{ $config.volumeMode | default "Filesystem" }}
+{{- end }}

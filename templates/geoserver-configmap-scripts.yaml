@@ -7,6 +7,8 @@ metadata:
 binaryData:
   geoserver_startup: >- 
 {{ include "geoserver.geoserver_startup" . | b64enc | indent 4 }}
+  setup_index_page: >- 
+{{ include "geoserver.setup_index_page" . | b64enc | indent 4 }}
   {{- if ($.Values.geoserver.clustering | default false) }}
   init_geoserver: >- 
 {{ include "geocluster.init_geoserver" . | b64enc | indent 4 }}

@@ -97,7 +97,12 @@ status=$((${status} + $?))
 cp ${GEOSERVER_HOME}/settings/security.config.xml ${GEOSERVER_DATA_DIR}/security/config.xml
 status=$((${status} + $?))
 
+if [[ ${status} -ne 0 ]]; then
+    echo "Failed to initialize geoserver"
+    exit ${status}
+fi
 exit 0
+
 
 {{- end }}
 

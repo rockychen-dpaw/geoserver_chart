@@ -72,6 +72,12 @@ spec:
           tty: true
           workingDir: /opt/apache-activemq
           env:
+            - name: RELEASE_TIME
+            {{- if eq ($.Values.messagequeue.releaseTime | default "")  "" }}
+              value: {{ now | date "2006-01-02T15:04:05" | quote }}
+            {{- else }}
+              value: {{ $.Values.messagequeue.releaseTime | quote }}
+            {{- end }}
             {{- range $key,$value := $.Values.messagequeue.envs | default dict }}
             - name: {{ $key }}
               value: {{ $value | quote }}

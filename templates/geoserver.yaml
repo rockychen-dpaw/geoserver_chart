@@ -32,7 +32,7 @@ spec:
           env:
             - name: CLUSTERING
               value: {{ ($.Values.geoserver.clustering | default false) | toString | quote }}
-            {{- range $key,$value := $.Values.geoserver.envs }}
+            {{- range $key,$value := $.Values.geoserver.envs | default dict }}
             - name: {{ $key }}
               value: {{ $value | quote }}
             {{- end }}
@@ -68,6 +68,10 @@ spec:
               mountPath: "/geoserver/settings"
             - name: scripts
               mountPath: "/geoserver/bin"
+            {{- if $.Values.geoserverHealthcheck }}
+            - name: report-data
+              mountPath: "/geoserver/reports"
+            {{- end }}
             {{- range $type,$volumes := $.Values.geoserver.volumes}}
             {{- range $name,$config := $volumes}}
             {{- range $i,$mount := $config.mounts }}
@@ -97,7 +101,13 @@ spec:
               value: {{ $.Values.geoserver.user | default "geoserver" }}
             - name: GROUP_NAME
               value: {{ $.Values.geoserver.group | default "geoserver" }}
-            {{- range $key,$value := $.Values.geoserver.envs }}
+            - name: RELEASE_TIME
+            {{- if eq ($.Values.geoserver.releaseTime | default "")  "" }}
+              value: {{ now | date "2006-01-02T15:04:05" | quote }}
+            {{- else }}
+              value: {{ $.Values.geoserver.releaseTime | quote }}
+            {{- end }}
+            {{- range $key,$value := $.Values.geoserver.envs | default dict }}
             - name: {{ $key }}
               value: {{ $value | quote }}
             {{- end }}
@@ -155,6 +165,10 @@ spec:
               mountPath: "/geoserver/settings"
             - name: scripts
               mountPath: "/geoserver/bin"
+            {{- if $.Values.geoserverHealthcheck }}
+            - name: report-data
+              mountPath: "/geoserver/reports"
+            {{- end }}
             {{- range $type,$volumes := $.Values.geoserver.volumes}}
             {{- range $name,$config := $volumes}}
             {{- range $i,$mount := $config.mounts }}
@@ -189,6 +203,11 @@ spec:
           name: {{ $.Release.Name }}-geoserver-configmap-scripts
           optional: false
           defaultMode: 0555
+      {{- if $.Values.geoserverHealthcheck }}
+      - name: report-data
+        persistentVolumeClaim:
+          claimName: {{ $.Release.Name }}-geoserver-healthcheck-report-data
+      {{- end }}
       {{- range $name,$config := get ($.Values.geoserver.volumes | default dict) "pvcs" | default dict }}
       - name: {{ $name }}
         persistentVolumeClaim:

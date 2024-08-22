@@ -17,8 +17,16 @@ binaryData:
 {{ include "geoserver.admin.cluster.properties" . | b64enc | indent 4 }}
   slave.cluster.properties: >- 
 {{ include "geoserver.slave.cluster.properties" . | b64enc | indent 4 }}
-  starttime.html: >- 
-{{ include "geoserver.starttime.html" . | b64enc | indent 4 }}
+  index.html: >- 
+{{ include "geoserver.index.html" . | b64enc | indent 4 }}
+  index_without_reports.html: >- 
+{{ include "geoserver.index_without_reports.html" . | b64enc | indent 4 }}
+  {{- if hasKey $.Values "geoserverHealthcheck" }}
+  default_reports.html: >- 
+{{ include "geoserver.default_reports.html" . | b64enc | indent 4 }}
+  {{- end }}
+  serverinfo.html: >- 
+{{ include "geoserver.serverinfo.html" . | b64enc | indent 4 }}
   starthistory.html: >- 
 {{ include "geoserver.starthistory.html" . | b64enc | indent 4 }}
 {{- if ($.Values.geoserver.clustering | default false) }}
