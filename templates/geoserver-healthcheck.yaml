@@ -14,6 +14,7 @@ spec:
     metadata:
       namespace: {{ $.Release.Namespace }}
     spec:
+      backoffLimit: {{ $.Values.geoserverHealthcheck.backoffLimit | default 0 |int }}
       template:
         spec:
           affinity: {}
@@ -28,7 +29,7 @@ spec:
                   value: {{ $.Values.geoserverHealthcheck.releaseTime | quote }}
                 {{- end }}
                 {{- if ($.Values.geoserver.clustering | default false) }}
-                  {{- if $.Values.geoserverHealthcheck.checkAllGeoservers }}
+                  {{- if $.Values.geoserverHealthcheck.checkAllGeoservers  }}
                 - name: GEOSERVER_URLS
                     {{- $urls := "" }}
                     {{- range $i,$v := until ($.Values.geoserver.replicas | default 2 | int ) }}

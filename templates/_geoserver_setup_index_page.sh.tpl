@@ -6,8 +6,8 @@ echo "Begin to setup the index page and reorts folder"
     #geosever healthcheck enabled
     {{- if ($.Values.geoserver.clustering | default false) }}
          #geocluster deployment
-         {{- if $.Values.geoserverHealthcheck.checkAllGeoservers | default true }}
-             #healcheck enabled for all geoservers
+         {{- if $.Values.geoserverHealthcheck.checkAllGeoservers }}
+             #healcheck enabled for all geoservers 
 echo "Copy /geoserver/settings/index.html as index page"
 cp /geoserver/settings/index.html /geoserver/data/www/server/index.html
 status=$((${status} + $?))
@@ -43,9 +43,11 @@ status=$((${status} + $?))
 exit ${status}
 {{- end }}
 
+echo "reportFolder=/geoserver/reports/${reportFolder}"
 #create the reports folder if not exist
 if [[ -e "/geoserver/reports/${reportFolder}" ]]; then
     if [[ ! -d "/geoserver/reports/${reportFolder}" ]]; then
+        echo "Remove reportFolder(/geoserver/reports/${reportFolder})"
         rm -f "/geoserver/reports/${reportFolder}"
         status=$((${status} + $?))
     fi
@@ -60,7 +62,8 @@ fi
 
 #create the reports.html if not exist
 if [[ -e "/geoserver/reports/${reportFolder}/reports.html" ]]; then
-    if [[ ! -f "/geoserver/reports/${reportFolder}" ]]; then
+    if [[ ! -f "/geoserver/reports/${reportFolder}/reports.html" ]]; then
+        echo "Remove reports.html(/geoserver/reports/${reportFolder}/reports.html)"
         rm -fdr "/geoserver/reports/${reportFolder}/reports.html"
         status=$((${status} + $?))
     fi
@@ -76,6 +79,7 @@ fi
 #create soft link
 if [[ -e "${GEOSERVER_DATA_DIR}/www/server/reports" ]]; then
     if [[ ! -h "${GEOSERVER_DATA_DIR}/www/server/reports" ]]; then
+        echo "Remove link file(${GEOSERVER_DATA_DIR}/www/server/reports)"
         rm -fdr "${GEOSERVER_DATA_DIR}/www/server/reports"
         status=$((${status} + $?))
     fi
