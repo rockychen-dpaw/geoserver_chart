@@ -15,6 +15,7 @@ fi
 mkdir /tmp/_helm_deploy
 
 cp -rf ${helm_dir}/Chart.yaml /tmp/_helm_deploy
+cp -rf ${helm_dir}/conf /tmp/_helm_deploy
 cp -rf ${helm_dir}/templates /tmp/_helm_deploy
 cp -rf ${helm_dir}/values*.yaml /tmp/_helm_deploy
 

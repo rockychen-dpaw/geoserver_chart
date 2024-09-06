@@ -61,14 +61,11 @@ else
 fi
 status=$((${status} + $?))
 
-echo "Copy the customzied geoserver config files from ${GEOSERVER_HOME}/settings to ${GEOWEBCACHE_CACHE_DIR}"
-if [[ ! -d "${GEOWEBCACHE_CACHE_DIR}" ]]; then
-  mkdir -p "${GEOWEBCACHE_CACHE_DIR}"
-  status=$((${status} + $?))
-fi
-
-cp ${GEOSERVER_HOME}/settings/geowebcache.xml ${GEOWEBCACHE_CACHE_DIR}
+{{- if gt (len ($.Values.geoserver.customsettings | default list)) 0  }}
+echo "Copy the custom settings to geoserver data dir"
+cp -rfL /geoserver/customsettings/* ${GEOSERVER_DATA_DIR}
 status=$((${status} + $?))
+{{- end }}
 
 {{- if $.Values.geoserver.liveness | default false }}
 #manage  liveness log

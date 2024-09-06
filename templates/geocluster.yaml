@@ -201,6 +201,13 @@ spec:
               mountPath: "/geoserver/settings"
             - name: scripts
               mountPath: "/geoserver/bin"
+            {{- if gt (len ($.Values.geoserver.customsettings | default list)) 0  }}
+            {{- range $config := $.Values.geoserver.customsettings }}
+            - name: geoserver-customsettings
+              mountPath: "/geoserver/customsettings/{{$config.mountPath}}"
+              subPath: {{$config.name}}
+            {{- end }}  
+            {{- end }}  
             {{- if $.Values.geoserverHealthcheck }}
             - name: report-data
               mountPath: "/geoserver/reports"
@@ -252,10 +259,28 @@ spec:
           name: {{ $.Release.Name }}-geoserver-configmap-scripts
           optional: false
           defaultMode: 0555
+      {{- if gt (len ($.Values.geoserver.customsettings | default list)) 0  }}
+      - name: geoserver-customsettings
+        configMap:
+          name: {{ $.Release.Name }}-geoserver-configmap-customsettings
+          optional: false
+          defaultMode: 0777
+      {{- end }}
       {{- if $.Values.geoserverHealthcheck }}
       - name: report-data
         persistentVolumeClaim:
           claimName: {{ $.Release.Name }}-geoserver-healthcheck-report-data
+      {{- end }}
+      {{- range $name,$config := get ($.Values.geoserver.volumes | default dict) "secrets" | default dict }}
+      - name: {{ $name }}
+        secret:
+          {{- if hasKey $config "defaultMode" }}
+          defaultMode: {{ $config.defaultMode }}
+          {{- end }}
+          {{- if hasKey $config "optional" }}
+          optional: {{ $config.optional }}
+          {{- end }}
+          secretName: {{ $.Release.Name }}-geoserver-volume-secret-{{ $name }}
       {{- end }}
       {{- range $name,$config := get ($.Values.geoserver.volumes | default dict) "pvcs" | default dict }}
       - name: {{ $name }}

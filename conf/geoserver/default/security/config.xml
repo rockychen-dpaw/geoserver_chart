@@ -1,4 +1,4 @@
-{{- define "geoserver.security.config.xml" }}<security>
+<security>
   <roleServiceName>default</roleServiceName>
   <authProviderNames>
     <string>default</string>
@@ -47,4 +47,3 @@
     </whitelistedMasks>
   </bruteForcePrevention>
 </security>
-{{- end}}
