@@ -1,4 +1,3 @@
-{{- define "geoserver.serverinfo.html" }}<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
 </head>
 <body>
@@ -10,6 +9,9 @@
 <tr><th style="text-align:right">Geoserver starting spent </th><td><span id="startingtime"></span></td></tr>
 <tr><th style="text-align:right">Geoserver initial memory is </th><td><span id="initialmemory"></span></td></tr>
 <tr><th style="text-align:right">Geoserver maximum memory is </th><td><span id="maxmemory"></span></td></tr>
+<tr><th style="text-align:right">Geoserver last heartbeat at </th><td><span id="heartbeat"></span></td></tr>
+<tr><th style="text-align:right">Geoserver heartbeat spent </th><td><span id="heartbeat_processingtime"></span></td></tr>
+<tr><th style="text-align:right">Geoserver heartbeat status </th><td><span id="heartbeat_status"></span></td></tr>
 <tr><th style="text-align:right">Geoserver resource was monitored at </th><td><span id="monitortime"></span></td></tr>
 <tr><th style="text-align:right">Geoserver resource usage is </th><td><span id="resourceusage"></span></td></tr>
 <tr><th style="text-align:right">Geoserver will restart at  </th><td><span id="nextrestarttime"></span></td></tr>
@@ -18,4 +20,3 @@
 </table>
 </body>
 </html>
-{{- end}}

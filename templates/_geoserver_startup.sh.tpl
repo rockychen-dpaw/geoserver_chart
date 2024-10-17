@@ -1,12 +1,24 @@
 {{- define "geoserver.geoserver_startup" }}#!/bin/bash
+LIVENESSLOG_EXPIREDAYS={{$.Values.geoserver.livenesslogExpiredays | default 30}}
 {{- $log_levels := dict "DISABLE" 0 "ERROR" 100 "WARNING" 200 "INFO" 300 "DEBUG" 400 }}
 {{- $log_levelname := upper ($.Values.geoserver.livenesslog | default "DISABLE") }}
 {{- if not (hasKey $log_levels $log_levelname) }}
 {{- $log_levelname = "DISABLE" }}
 {{- end }}
 {{- $log_level := (get $log_levels $log_levelname) | int }}
-wget --tries=1 --timeout={{$.Values.geoserver.liveCheckInterval | default 0.5 }} http://127.0.0.1:8080/geoserver/web -o /dev/null -O /dev/null
+
+{{ $.Files.Get "static/manage_livenesslog.sh"  }}
+
+starttime=$(date '+%s.%N')
+wget --tries=1 --timeout={{$.Values.geoserver.liveCheckTimeout | default 0.5 }} http://127.0.0.1:8080/geoserver/web -o /dev/null -O /dev/null
 status=$?
+endtime=$(date '+%s.%N')
+pingtime=$(perl -e "print (${endtime} - ${starttime}) * 1000")
+if [[ ${status} -eq 0 ]]; then
+    pingstatus="Succeed"
+else
+    pingstatus="Failed"
+fi
 
 #set geoserver starttime
 if [[ $status -eq 0 ]]; then
@@ -96,25 +108,25 @@ if [[ $status -eq 0 ]]; then
         fi
       fi
       nextRestartSeconds=$(date -d "${nextRestartTime}" '+%s')
-      sed -i "s/<span id=\"nextrestarttime\">[^<]*<\/span>/<span id=\"nextrestarttime\">${nextRestartTime}<\/span>/g" ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html
+      sed -i "s/<span id=\"nextrestarttime\">[^<]*<\/span>/<span id=\"nextrestarttime\">${nextRestartTime}<\/span>/" ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html
       echo ${nextRestartSeconds} > ${GEOSERVER_DATA_DIR}/www/server/nextrestarttime
       {{- if ge $log_level ((get $log_levels "INFO") | int) }}
-      echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Startup : next scheduled restart time is ${nextRestartTime}" >> ${GEOSERVER_DATA_DIR}/www/server/liveness.log
+      echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Startup : next scheduled restart time is ${nextRestartTime}" >> ${livenesslogfile}
       {{- end }}
     else
-      sed -i "s/<span id=\"nextrestarttime\">[^<]*<\/span>/<span id=\"nextrestarttime\">N\/A<\/span>/g" ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html
+      sed -i "s/<span id=\"nextrestarttime\">[^<]*<\/span>/<span id=\"nextrestarttime\">N\/A<\/span>/" ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html
       nextRestartTime="N/A"
       rm -rf ${GEOSERVER_DATA_DIR}/www/server/nextrestarttime
       {{- if ge $log_level ((get $log_levels "INFO") | int) }}
-      echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Startup : next scheduled restart time is N/A" >> ${GEOSERVER_DATA_DIR}/www/server/liveness.log
+      echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Startup : next scheduled restart time is N/A" >> ${livenesslogfile}
       {{- end }}
     fi
     {{- else }}
-    sed -i "s/<span id=\"nextrestarttime\">[^<]*<\/span>/<span id=\"nextrestarttime\">N\/A<\/span>/g" ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html
+    sed -i "s/<span id=\"nextrestarttime\">[^<]*<\/span>/<span id=\"nextrestarttime\">N\/A<\/span>/" ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html
     rm -rf ${GEOSERVER_DATA_DIR}/www/server/nextrestarttime
     nextRestartTime="N/A"
     {{- if ge $log_level ((get $log_levels "INFO") | int) }}
-    echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Startup : next scheduled restart time is N/A" >> ${GEOSERVER_DATA_DIR}/www/server/liveness.log
+    echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Startup : next scheduled restart time is N/A" >> ${livenesslogfile}
     {{- end }}
     {{- end }}
 
@@ -150,11 +162,8 @@ if [[ $status -eq 0 ]]; then
         startingtime="${minutes} ${seconds}"
     fi
 
-    sed -i "s/<span id=\"starttime\">[^<]*<\/span>/<span id=\"starttime\">${starttime}<\/span>/g" ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html
-    sed -i "s/<span id=\"readytime\">[^<]*<\/span>/<span id=\"readytime\">${readytime}<\/span>/g" ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html
-    sed -i "s/<span id=\"startingtime\">[^<]*<\/span>/<span id=\"startingtime\">${startingtime}<\/span>/g" ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html
-    sed -i "s/<span id=\"initialmemory\">[^<]*<\/span>/<span id=\"initialmemory\">${INITIAL_MEMORY}<\/span>/g" ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html
-    sed -i "s/<span id=\"maxmemory\">[^<]*<\/span>/<span id=\"maxmemory\">${MAXIMUM_MEMORY}<\/span>/g" ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html
+    sed -i -e "s/<span id=\"starttime\">[^<]*<\/span>/<span id=\"starttime\">${starttime}<\/span>/" -e "s/<span id=\"readytime\">[^<]*<\/span>/<span id=\"readytime\">${readytime}<\/span>/" -e "s/<span id=\"startingtime\">[^<]*<\/span>/<span id=\"startingtime\">${startingtime}<\/span>/" -e "s/<span id=\"initialmemory\">[^<]*<\/span>/<span id=\"initialmemory\">${INITIAL_MEMORY}<\/span>/" -e "s/<span id=\"maxmemory\">[^<]*<\/span>/<span id=\"maxmemory\">${MAXIMUM_MEMORY}<\/span>/" ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html
+
     echo ${readyseconds} > ${GEOSERVER_DATA_DIR}/www/server/starttime
 
     #write the start history
@@ -182,21 +191,21 @@ fi
 memoryusage=""
   {{- end }}
 if [[ ${status} -gt 0 ]]; then
-  echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Startup : Geoserver is not ready. ${memoryusage}" >> ${GEOSERVER_DATA_DIR}/www/server/liveness.log
+  echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Startup : Geoserver is not ready. ${memoryusage} , ping: ${pingstatus} , pingtime: ${pingtime}" >> ${livenesslogfile}
 else
   {{- if gt ($.Values.geoserver.memoryMonitorInterval | default 0 | int) 0  }}
   echo ${geoserverpid} > /tmp/geoserverpid
   echo "$(date -d '+{{- $.Values.geoserver.memoryMonitorInterval}} seconds' '+%s')" > /tmp/memorymonitornexttime
   {{- end }}
-  echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Startup : Geoserver is ready. ${memoryusage}" >> ${GEOSERVER_DATA_DIR}/www/server/liveness.log
+  echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Startup : Geoserver is ready. ${memoryusage} , ping: ${pingstatus} , pingtime: ${pingtime}" >> ${livenesslogfile}
 fi
 
 if [[ "${memoryusage}" != "" ]]; then
-  sed -i "s/<span id=\"monitortime\">[^<]*<\/span>/<span id=\"monitortime\">$(date '+%Y-%m-%d %H:%M:%S')<\/span>/g" ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html
-  sed -i "s/<span id=\"resourceusage\">[^<]*<\/span>/<span id=\"resourceusage\">${memoryusage}<\/span>/g" ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html
+  sed -i -e "s/<span id=\"monitortime\">[^<]*<\/span>/<span id=\"monitortime\">$(date '+%Y-%m-%d %H:%M:%S')<\/span>/" -e "s/<span id=\"resourceusage\">[^<]*<\/span>/<span id=\"resourceusage\">${memoryusage}<\/span>/g" ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html
 fi
 
 {{- end }}
+sed -i -e "s/<span id=\"heartbeat\">[^<]*<\/span>/<span id=\"heartbeat\">${now}<\/span>/" -e "s/<span id=\"heartbeat_status\">[^<]*<\/span>/<span id=\"heartbeat_status\">${pingstatus}<\/span>/" -e "s/<span id=\"heartbeat_processingtime\">[^<]*<\/span>/<span id=\"heartbeat_processingtime\">${pingtime}<\/span>/" ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html
 exit $status
 {{- end }}
 
