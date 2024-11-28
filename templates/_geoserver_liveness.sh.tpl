@@ -10,7 +10,7 @@ LIVENESSLOG_EXPIREDAYS={{$.Values.geoserver.livenesslogExpiredays | default 30}}
 {{ $.Files.Get "static/manage_livenesslog.sh"  }}
 
 starttime=$(date '+%s.%N')
-wget --tries=1 --timeout={{$.Values.geoserver.liveCheckTimeout | default 0.5 }} http://127.0.0.1:8080/geoserver/www/serverinfo.html -o /dev/null -O /dev/null
+wget --tries=1 --timeout={{$.Values.geoserver.liveCheckTimeout | default 0.5 }} http://127.0.0.1:8080/geoserver/www/starttime -o /dev/null -O /dev/null
 status=$?
 endtime=$(date '+%s.%N')
 pingtime=$(perl -e "print (${endtime} - ${starttime}) * 1000")
