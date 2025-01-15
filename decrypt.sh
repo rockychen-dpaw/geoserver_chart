@@ -1,2 +1,2 @@
 #!/bin/bash
-openssl des3 -d < $1.des3 > $1
+openssl des3 -d -in $1.des3 -out $1
