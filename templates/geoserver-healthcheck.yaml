@@ -1,4 +1,8 @@
 {{- if $.Values.geoserverHealthcheck }}
+{{- $adminServerIsWorker :=  true }}
+{{- if hasKey $.Values.geoserver "adminServerIsWorker" }}
+  {{- $adminServerIsWorker =  $.Values.geoserver.adminServerIsWorker }}
+{{- end }}
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -32,17 +36,28 @@ spec:
                   {{- if $.Values.geoserverHealthcheck.checkAllGeoservers  }}
                 - name: GEOSERVER_URLS
                     {{- $urls := "" }}
-                    {{- range $i,$v := until ($.Values.geoserver.replicas | default 2 | int ) }}
-                      {{- if eq $v 0 }}
-                        {{- $urls = printf "%s-geocluster-%d=http://%s-geoclusteradmin:%d/geoserver" $.Release.Name $v $.Release.Name ($.Values.geoserver.port | default 8080 | int)}}
-                      {{- else }}
-                        {{- $urls = printf "%s,%s-geocluster-%d=http://%s-geoclusterslave%d:%d/geoserver" $urls $.Release.Name $v $.Release.Name $v ($.Values.geoserver.port | default 8080 | int)}}
+                    {{- if $adminServerIsWorker }}
+                      {{- range $i,$v := until ($.Values.geoserver.replicas | default 2 | int ) }}
+                        {{- if eq $v 0 }}
+                          {{- $urls = printf "%s-geocluster-0=http://%s-geoclusteradmin:%d/geoserver" $.Release.Name $.Release.Name ($.Values.geoserver.port | default 8080 | int)}}
+                        {{- else }}
+                          {{- $urls = printf "%s,%s-geocluster-%d=http://%s-geoclusterslave%d:%d/geoserver" $urls $.Release.Name $v $.Release.Name $v ($.Values.geoserver.port | default 8080 | int)}}
+                        {{- end }}
                       {{- end }}
+                    {{- else }}
+                      {{- $urls = printf "%s-geoclusteradmin=http://%s-geoclusteradmin:%d/geoserver" $.Release.Name $.Release.Name ($.Values.geoserver.port | default 8080 | int)}}
+                      {{- range $i,$v := until ($.Values.geoserver.replicas | default 2 | int ) }}
+                        {{- $urls = printf "%s,%s-geocluster-%d=http://%s-geoclusterslave%d:%d/geoserver" $urls $.Release.Name $v $.Release.Name $v ($.Values.geoserver.port | default 8080 | int)}}
+                        {{- end }}
                     {{- end }}
                   value: {{ $urls | quote }}
                   {{- else }}
                 - name: GEOSERVER_URLS
+                    {{- if $adminServerIsWorker }}
                   value: {{ (printf "%s-geocluster-0=http://%s-geoclusteradmin:%d/geoserver" $.Release.Name $.Release.Name ($.Values.geoserver.port | default 8080 | int)) | quote}}
+                    {{- else }}
+                  value: {{ (printf "%s-geoclusteradmin=http://%s-geoclusteradmin:%d/geoserver" $.Release.Name $.Release.Name ($.Values.geoserver.port | default 8080 | int)) | quote}}
+                    {{- end }}
                   {{- end }}
                 {{- else }}
                 - name: GEOSERVER_NAME

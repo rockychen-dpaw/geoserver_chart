@@ -1,4 +1,9 @@
 {{- define "geoserver.setup_index_page" }}#!/bin/bash
+{{- $adminServerIsWorker :=  true }}
+{{- if hasKey $.Values.geoserver "adminServerIsWorker" }}
+  {{- $adminServerIsWorker =  $.Values.geoserver.adminServerIsWorker }}
+{{- end }}
+
 status=0
 echo "Begin to setup the index page and reorts folder"
 #prepare the index.html file and find the reportFolder
@@ -11,15 +16,28 @@ echo "Begin to setup the index page and reorts folder"
 echo "Copy /geoserver/settings/index.html as index page"
 cp /geoserver/settings/index.html /geoserver/data/www/server/index.html
 status=$((${status} + $?))
+           {{- if $adminServerIsWorker }}
 reportFolder="${HOSTNAME}"
+           {{- else }}
+if [[ "${GEOCLUSTER_ROLE}" == "admin" ]]; then
+reportFolder="{{ $.Release.Name }}-geoclusteradmin"
+else
+reportFolder="${HOSTNAME}"
+fi
+
+           {{- end }}
          {{- else }}
-             #healcheck enabled for geocluster admin server
-if [[ "${HOSTNAME}" == "{{$.Release.Name}}-geocluster-0" ]]; then
+            #healcheck enabled for geocluster admin server
+if [[ "${GEOCLUSTER_ROLE}" == "admin" ]]; then
     #admin server
     echo "Copy /geoserver/settings/index.html as index page"
     cp /geoserver/settings/index.html /geoserver/data/www/server/index.html
     status=$((${status} + $?))
-    reportFolder="{{$.Release.Name}}-geocluster-0"
+    {{- if $adminServerIsWorker }}
+        reportFolder="{{$.Release.Name}}-geocluster-0"
+    {{- else }}
+        reportFolder="{{ $.Release.Name }}-geoclusteradmin"
+    {{- end }}
 else
     #slave server
     echo "Copy /geoserver/settings/index_without_reports.html as index page"

@@ -1,4 +1,6 @@
 {{- define "geocluster.start_geoserver" }}#!/bin/bash
+source /geoserver/bin/set_geoclusterrole
+
 echo "Check whether the cluster volume has been mounted successfully"
 if [[ "${GEOWEBCACHE_CACHE_DIR}" == "" ]];then
     export GEOWEBCACHE_CACHE_DIR=${GEOSERVER_DATA_DIR}/gwc
@@ -52,7 +54,7 @@ fi
 cp -f ${GEOSERVER_HOME}/settings/broker.xml ${EXTRA_CONFIG_DIR}/broker.xml
 status=$((${status} + $?))
 
-if [[ "${HOSTNAME}" == "{{ $.Release.Name }}-geocluster-0" ]]; then
+if [[ "${GEOCLUSTER_ROLE}" == "admin" ]]; then
   echo "Copy the cluster.properties for geocluster admin to ${EXTRA_CONFIG_DIR}"
   cp -f ${GEOSERVER_HOME}/settings/admin.cluster.properties ${EXTRA_CONFIG_DIR}/cluster.properties
 else
@@ -67,31 +69,18 @@ cp -rfL /geoserver/customsettings/* ${GEOSERVER_DATA_DIR}
 status=$((${status} + $?))
 {{- end }}
 
-{{- if $.Values.geoserver.liveness | default false }}
-#manage  liveness log
-if [[ -f ${GEOSERVER_DATA_DIR}/www/server/liveness.log ]]; then
-  echo "Manage the length of the liveness log"
-  rows=$(cat ${GEOSERVER_DATA_DIR}/www/server/liveness.log | wc -l )
-  if [[ ${rows} -gt 10000 ]]; then
-    firstrow=1
-    lastrow=$((${rows} - 10000))
-    sed -i -e "${firstrow},${lastrow}d" ${GEOSERVER_DATA_DIR}/www/server/liveness.log
-    status=$((${status} + $?))
-  fi
-fi 
-{{- end }}
-
 if [[ ${status} -ne 0 ]]; then
     echo "Failed to initialize geoserver"
     exit ${status}
 fi
 
-if [[ "${HOSTNAME}" == "{{ $.Release.Name }}-geocluster-0" ]]; then
+if [[ "${GEOCLUSTER_ROLE}" == "admin" ]]; then
   export GEOSERVER_CSRF_WHITELIST={{ (printf "%s,%s" ($.Values.geoserver.domain | default (printf "%s.dbca.wa.gov.au" $.Release.Name)) ($.Values.geoserver.adminDomain | default (printf "%sadmin.dbca.wa.gov.au" $.Release.Name ))) | quote }}
 else
   slaveindex=${HOSTNAME#*{{- printf "%s-geocluster-" $.Release.Name }}}
   export GEOSERVER_CSRF_WHITELIST="$(printf {{ (printf "%s,%s" ($.Values.geoserver.domain | default (printf "%s.dbca.wa.gov.au" $.Release.Name )) ($.Values.geoserver.slaveDomain | default "kmislave%d-uat.dbca.wa.gov.au")) | quote }} ${slaveindex})"
 fi
+
 echo "GEOSERVER_CSRF_WHITELIST=${GEOSERVER_CSRF_WHITELIST}"
 echo "Begin to start geoserver"
 /scripts/entrypoint.sh

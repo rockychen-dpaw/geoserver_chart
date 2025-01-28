@@ -1,13 +1,14 @@
 {{- $count := 0 }}
-{{- range $name,$config := get ($.Values.geoserver.volumes | default dict) "pvcs" | default dict }}
-    {{- $count = add $count 1}}
+{{- $adminServerIsWorker :=  true }}
+{{- if hasKey $.Values.geoserver "adminServerIsWorker" }}
+  {{- $adminServerIsWorker =  $.Values.geoserver.adminServerIsWorker }}
 {{- end }}
 
-{{- if gt $count 0 }}
-{{- range $name,$config := $.Values.geoserver.volumes.pvcs }}
-    {{- if gt $count 1 }}
+{{- range $name,$config := get ($.Values.geoserver.volumes | default dict) "pvcs" | default dict }}
+{{- $count = add $count 1}}
+{{- if gt $count 1 }}
 ---
-    {{- end }}
+{{- end }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -21,4 +22,25 @@ spec:
   storageClassName: {{ $config.storageClassName | default "managed-csi-retain" }}
   volumeMode: {{ $config.volumeMode | default "Filesystem" }}
 {{- end }}
+
+{{- if not $adminServerIsWorker }}
+{{- range $name,$config := $.Values.geoserver.volumeClaimTemplates | default dict }}
+{{- $count = add $count 1}}
+{{- if gt $count 1 }}
+---
 {{- end }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $.Release.Name }}-geoclusteradmin-{{ $name }}
+spec:
+  accessModes:
+    - {{ $config.accessMode | default "ReadWriteOnce" }}
+  resources:
+    requests:
+      storage: {{ $config.storage}}
+  storageClassName: {{ $config.storageClassName | default "managed-csi-retain" }}
+  volumeMode: {{ $config.volumeMode | default "Filesystem" }}
+{{- end }}
+{{- end }}
+

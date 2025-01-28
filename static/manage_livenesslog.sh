@@ -18,8 +18,7 @@ if [[ ! -f ${livenesslogfile} ]]; then
     earliest_date=$(date --date="${today}-${LIVENESSLOG_EXPIREDAYS} days")
     earliest_seconds=$(date --date="${earliest_date}" "+%s")
     for d in $(ls "${livenessloghome}" ); do 
-        logdate=${d%.html*}
-        logdate=$(date --date="${logdate}")
+        logdate=${d%.log*}
         logdate_seconds=$(date --date="${logdate}" "+%s")
         logdate=$(date --date="${logdate}" "+%Y-%m-%d")
         if [[ ${logdate_seconds} -lt ${earliest_seconds} ]]; then

@@ -1,4 +1,13 @@
 {{- if $.Values.geoserver.clustering | default false }}
+{{- $adminServerIsWorker :=  true }}
+{{- if hasKey $.Values.geoserver "adminServerIsWorker" }}
+  {{- $adminServerIsWorker =  $.Values.geoserver.adminServerIsWorker }}
+{{- end }}
+
+{{- $minslaveindex :=  0 }}
+{{- if $adminServerIsWorker }}
+    {{- $minslaveindex =  1 }}
+{{- end }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -17,6 +26,38 @@ spec:
                   number: {{ $.Values.geoserver.port | default 8080 }}
             path: /
             pathType: Prefix
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $.Release.Name }}-geocluster-ingress
+  namespace: {{ $.Release.Namespace }}
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: {{ $.Values.geoserver.domain | default (printf "%s.dbca.wa.gov.au" $.Release.Name) }}
+      http:
+        paths:
+          - backend:
+              service:
+                {{- if $adminServerIsWorker }}
+                name: {{ $.Release.Name }}-geoclusteradmin
+                {{- else }}
+                name: {{ $.Release.Name }}-geoclusterslave0
+                {{- end }}
+                port:
+                  number: {{ $.Values.geoserver.port | default 8080 }}
+            path: /geoserver/web
+            pathType: Prefix
+          - backend:
+              service:
+                name: {{ $.Release.Name }}-geocluster
+                port:
+                  number: {{ $.Values.geoserver.port | default 8080 }}
+            path: /
+            pathType: Prefix
+
 {{- range $i,$domain := $.Values.geoserver.otherDomains | default list }}
 ---
 apiVersion: networking.k8s.io/v1
@@ -32,7 +73,11 @@ spec:
         paths:
           - backend:
               service:
+                {{- if $adminServerIsWorker }}
                 name: {{ $.Release.Name }}-geoclusteradmin
+                {{- else }}
+                name: {{ $.Release.Name }}-geoclusterslave0
+                {{- end }}
                 port:
                   number: {{ $.Values.geoserver.port | default 8080 }}
             path: /geoserver/web
@@ -45,33 +90,8 @@ spec:
             path: /
             pathType: Prefix
 {{- end }}
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: {{ $.Release.Name }}-geocluster-ingress
-  namespace: {{ $.Release.Namespace }}
-spec:
-  ingressClassName: nginx
-  rules:
-    - host: {{ $.Values.geoserver.domain | default (printf "%s.dbca.wa.gov.au" $.Release.Name) }}
-      http:
-        paths:
-          - backend:
-              service:
-                name: {{ $.Release.Name }}-geoclusteradmin
-                port:
-                  number: {{ $.Values.geoserver.port | default 8080 }}
-            path: /geoserver/web
-            pathType: Prefix
-          - backend:
-              service:
-                name: {{ $.Release.Name }}-geocluster
-                port:
-                  number: {{ $.Values.geoserver.port | default 8080 }}
-            path: /
-            pathType: Prefix
-{{- range $i,$v := untilStep 1 ($.Values.geoserver.replicas | default 2 | int ) 1 }}
+
+{{- range $i,$v := untilStep $minslaveindex ($.Values.geoserver.replicas | default 2 | int ) 1 }}
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress

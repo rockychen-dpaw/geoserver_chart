@@ -25,29 +25,29 @@ fi
 geoserverpid=$(cat /tmp/geoserverpid)
 nexttime=$(cat /tmp/memorymonitornexttime)
 if [[ $(date '+%s') -ge ${nexttime} ]] ; then
-  printf -v memoryusage "%%CPU: %s , Virtual Memory: %sMB , Physical Memory: %sMB" $(ps -o %cpu=,vsz=,rss= ${geoserverpid} | awk '{printf "%.1f %.0f %.0f",$1,$2/1024,$3/1024}')
+{{ $.Files.Get "static/resourceusage.sh" | indent 2 }}
   echo "$((${nexttime} + {{- $.Values.geoserver.memoryMonitorInterval}}))" > /tmp/memorymonitornexttime
 elif [[ ${status} -gt 0 ]]; then
-  printf -v memoryusage "%%CPU: %s , Virtual Memory: %sMB , Physical Memory: %sMB" $(ps -o %cpu=,vsz=,rss= ${geoserverpid} | awk '{printf "%.1f %.0f %.0f",$1,$2/1024,$3/1024}')
+{{ $.Files.Get "static/resourceusage.sh" | indent 2 }}
 else
-  memoryusage=""
+  resourceusage=""
 fi
 {{- else }}
-memoryusage=""
+resourceusage=""
 {{- end }}
 if [[ ${status} -gt 0 ]]; then
-  echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Liveness : Geoserver is offline. ${memoryusage} , ping: ${pingstatus} , pingtime: ${pingtime}" >> ${livenesslogfile}
+  echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Liveness : Geoserver is offline. ${resourceusage} , ping: ${pingstatus} , pingtime: ${pingtime}" >> ${livenesslogfile}
 {{- if ge $log_level ((get $log_levels "DEBUG") | int) }}
 else
-  echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Liveness : Geoserver is online. ${memoryusage} , ping: ${pingstatus} , pingtime: ${pingtime}" >> ${livenesslogfile}
+  echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Liveness : Geoserver is online. ${resourceusage} , ping: ${pingstatus} , pingtime: ${pingtime}" >> ${livenesslogfile}
 {{- else }}
-elif [[ "${memoryusage}" != "" ]]; then
-  echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Liveness : Geoserver is online. ${memoryusage} , ping: ${pingstatus} , pingtime: ${pingtime}" >> ${livenesslogfile}
+elif [[ "${resourceusage}" != "" ]]; then
+  echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Liveness : Geoserver is online. ${resourceusage} , ping: ${pingstatus} , pingtime: ${pingtime}" >> ${livenesslogfile}
 {{- end }}
 fi
 
-if [[ "${memoryusage}" != "" ]]; then
-  sed -i -e "s/<span id=\"monitortime\">[^<]*<\/span>/<span id=\"monitortime\">$(date '+%Y-%m-%d %H:%M:%S')<\/span>/" -e "s/<span id=\"resourceusage\">[^<]*<\/span>/<span id=\"resourceusage\">${memoryusage}<\/span>/" -e "s/<span id=\"heartbeat\">[^<]*<\/span>/<span id=\"heartbeat\">${now}<\/span>/" -e "s/<span id=\"heartbeat_status\">[^<]*<\/span>/<span id=\"heartbeat_status\">${pingstatus}<\/span>/" -e "s/<span id=\"heartbeat_processingtime\">[^<]*<\/span>/<span id=\"heartbeat_processingtime\">${pingtime}<\/span>/" ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html
+if [[ "${resourceusage}" != "" ]]; then
+  sed -i -e "s/<span id=\"monitortime\">[^<]*<\/span>/<span id=\"monitortime\">$(date '+%Y-%m-%d %H:%M:%S')<\/span>/" -e "s/<span id=\"resourceusage\">[^<]*<\/span>/<span id=\"resourceusage\">${resourceusage}<\/span>/" -e "s/<span id=\"heartbeat\">[^<]*<\/span>/<span id=\"heartbeat\">${now}<\/span>/" -e "s/<span id=\"heartbeat_status\">[^<]*<\/span>/<span id=\"heartbeat_status\">${pingstatus}<\/span>/" -e "s/<span id=\"heartbeat_processingtime\">[^<]*<\/span>/<span id=\"heartbeat_processingtime\">${pingtime}<\/span>/" ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html
 else
     sed -i -e "s/<span id=\"heartbeat\">[^<]*<\/span>/<span id=\"heartbeat\">${now}<\/span>/" -e "s/<span id=\"heartbeat_status\">[^<]*<\/span>/<span id=\"heartbeat_status\">${pingstatus}<\/span>/" -e "s/<span id=\"heartbeat_processingtime\">[^<]*<\/span>/<span id=\"heartbeat_processingtime\">${pingtime}<\/span>/" ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html
 fi

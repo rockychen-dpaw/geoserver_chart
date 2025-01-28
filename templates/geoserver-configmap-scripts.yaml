@@ -16,6 +16,12 @@ binaryData:
 {{ include "geocluster.start_geoserver" . | b64enc | indent 4 }}
   geoserver_liveness: >- 
 {{ include "geocluster.geoserver_liveness" . | b64enc | indent 4 }}
+  set_geoclusterrole: >- 
+{{ include "geocluster.set_role" . | b64enc | indent 4 }}
+  geocluster_can_restart: >- 
+{{ include "geocluster.can_restart" . | b64enc | indent 4 }}
+  geocluster_restart: >- 
+{{ include "geocluster.restart" . | b64enc | indent 4 }}
   {{- else }}
   init_geoserver: >- 
 {{ include "geoserver.init_geoserver" . | b64enc | indent 4 }}

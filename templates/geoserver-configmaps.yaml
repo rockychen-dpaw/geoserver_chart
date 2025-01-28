@@ -1,8 +1,11 @@
 {{- $configmaps := 0 }} 
-{{- range $name,$data := $.Values.geoserver.configmaps | default dict }}
-    {{- $configmaps = add1 $configmaps}}
+{{- $adminServerIsWorker :=  true }}
+{{- if hasKey $.Values.geoserver "adminServerIsWorker" }}
+  {{- $adminServerIsWorker =  $.Values.geoserver.adminServerIsWorker }}
 {{- end }}
+
 {{- range $name,$data := $.Values.geoserver.configmaps | default dict }}
+{{- $configmaps = add1 $configmaps}}
 {{- if gt $configmaps 1 }}
 ---
 {{- end }}
@@ -15,4 +18,38 @@ kind: ConfigMap
 metadata:
   name: {{ $.Release.Name }}-geoserver-configmap-{{ $name }}
   namespace: {{ $.Release.Namespace }}
+{{- end }}
+
+{{- if not $adminServerIsWorker }}
+{{- range $name,$data := $.Values.geoserver.slaveConfigmaps | default dict }}
+{{- $configmaps = add1 $configmaps}}
+{{- if gt $configmaps 1 }}
+---
+{{- end }}
+apiVersion: v1
+data:
+  {{- range $key,$value := $data }}
+  {{ $key }}: {{ $value | toString | quote }}
+  {{- end }}
+kind: ConfigMap
+metadata:
+  name: {{ $.Release.Name }}-geoserver-slaveconfigmap-{{ $name }}
+  namespace: {{ $.Release.Namespace }}
+{{- end }}
+
+{{- range $name,$data := $.Values.geoserver.adminConfigmaps | default dict }}
+{{- $configmaps = add1 $configmaps}}
+{{- if gt $configmaps 1 }}
+---
+{{- end }}
+apiVersion: v1
+data:
+  {{- range $key,$value := $data }}
+  {{ $key }}: {{ $value | toString | quote }}
+  {{- end }}
+kind: ConfigMap
+metadata:
+  name: {{ $.Release.Name }}-geoserver-adminconfigmap-{{ $name }}
+  namespace: {{ $.Release.Namespace }}
+{{- end }}
 {{- end }}

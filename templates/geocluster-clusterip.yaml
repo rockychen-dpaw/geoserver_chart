@@ -1,4 +1,8 @@
 {{- if $.Values.geoserver.clustering | default false }}
+{{- $adminServerIsWorker :=  true }}
+{{- if hasKey $.Values.geoserver "adminServerIsWorker" }}
+  {{- $adminServerIsWorker =  $.Values.geoserver.adminServerIsWorker }}
+{{- end }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -15,15 +19,16 @@ spec:
       protocol: TCP
       targetPort: 8080
   selector:
-    workload.user.cattle.io/workloadselector: apps.statefulset-{{ $.Release.Namespace }}-{{ $.Release.Name }}-geocluster
+    workload.user.cattle.io/workloadselector: apps.statefulset-{{ $.Release.Namespace}}-{{ $.Release.Name }}-geocluster
   sessionAffinity: None
   type: ClusterIP
+
 {{- range $i,$v := until ($.Values.geoserver.replicas | default 2 | int ) }}
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  {{- if eq $v 0 }}
+  {{- if and ($adminServerIsWorker) (eq $v 0) }}
   name: {{ $.Release.Name }}-geoclusteradmin
   {{- else }}
   name: {{ $.Release.Name }}-geoclusterslave{{$v}}
@@ -40,12 +45,32 @@ spec:
       protocol: TCP
       targetPort: 8080
   selector:
-    {{- if eq $v 0 }}
-    statefulset.kubernetes.io/pod-name: {{ $.Release.Name }}-geocluster-0
-    {{- else }}
     statefulset.kubernetes.io/pod-name: {{ $.Release.Name }}-geocluster-{{ $v }}
-    {{- end }}
   sessionAffinity: None
   type: ClusterIP
 {{- end }}
+
+{{- if not $adminServerIsWorker }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $.Release.Name }}-geoclusteradmin
+  namespace: {{ $.Release.Namespace }}
+spec:
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+    - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+    - name: default
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+  selector:
+    workload.user.cattle.io/workloadselector: apps.deployment-{{ $.Release.Namespace}}-{{ $.Release.Name }}-geoclusteradmin
+  sessionAffinity: None
+  type: ClusterIP
+{{- end }}
+
 {{- end }}

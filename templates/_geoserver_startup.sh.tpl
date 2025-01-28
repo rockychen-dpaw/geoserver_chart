@@ -1,11 +1,17 @@
 {{- define "geoserver.geoserver_startup" }}#!/bin/bash
 LIVENESSLOG_EXPIREDAYS={{$.Values.geoserver.livenesslogExpiredays | default 30}}
+{{- $adminServerIsWorker :=  true }}
+{{- if hasKey $.Values.geoserver "adminServerIsWorker" }}
+  {{- $adminServerIsWorker =  $.Values.geoserver.adminServerIsWorker }}
+{{- end }}
 {{- $log_levels := dict "DISABLE" 0 "ERROR" 100 "WARNING" 200 "INFO" 300 "DEBUG" 400 }}
 {{- $log_levelname := upper ($.Values.geoserver.livenesslog | default "DISABLE") }}
 {{- if not (hasKey $log_levels $log_levelname) }}
 {{- $log_levelname = "DISABLE" }}
 {{- end }}
 {{- $log_level := (get $log_levels $log_levelname) | int }}
+
+source /geoserver/bin/set_geoclusterrole
 
 {{ $.Files.Get "static/manage_livenesslog.sh"  }}
 
@@ -25,7 +31,8 @@ if [[ $status -eq 0 ]]; then
     #geoserver is ready to use
 
     #set geoserver next restart time
-    {{- if and ($.Values.geoserver.clustering | default false)  (gt ($.Values.geoserver.replicas | default 1 | int) 1) (get $.Values.geoserver "restartPolicy") (get $.Values.geoserver.restartPolicy "restartSchedule") }}
+    {{- if and ($.Values.geoserver.clustering | default false) (or $adminServerIsWorker (gt ($.Values.geoserver.replicas | default 1 | int) 1)) (get $.Values.geoserver "restartPolicy") (get $.Values.geoserver.restartPolicy "restartSchedule") }}
+    #populate all restart configuration
     {{- $index := 0}}
     {{- $found := 0}}
     {{- range $server,$config := $.Values.geoserver.restartPolicy.restartSchedule }}
@@ -57,15 +64,31 @@ if [[ $status -eq 0 ]]; then
       {{- end }}
     {{- end }}
     
+    #get the restart config for this server
+    {{- if $adminServerIsWorker }}
     key="server${HOSTNAME#{{ $.Release.Name }}-geocluster-*}"
-    declare -n restartDays="${key}RestartDay"
-    declare -n restartTimes="${key}RestartTimes"
+    {{- else }}
+    if [[ ${GEOCLUSTER_ROLE} == "admin" ]]; then
+      key="adminServer"
+    else
+      {{- if gt ($.Values.geoserver.replicas | default 1 | int) 1 }}
+      key="server${HOSTNAME#{{ $.Release.Name }}-geocluster-*}"
+      {{- else }}
+      key=""
+      {{- end }}
+    fi
+    {{- end }}
+
+    if [[ "${key}" != "" ]]; then
+      declare -n restartDays="${key}RestartDay"
+      declare -n restartTimes="${key}RestartTimes"
+    fi
     
     now=$(date '+%Y-%m-%d %H:%M:%S')
     today=$(date -d "${now}" '+%Y-%m-%d')
     seconds=$(date -d "${now}" '+%s')
     
-    if [[ ${#restartDays[@]} -gt 0 ]]; then
+    if [[ "${key}" != "" ]] && [[ ${#restartDays[@]} -gt 0 ]]; then
       #find next restart time
       nextRestartTime=""
       startTime=0
@@ -183,25 +206,25 @@ fi
   {{- if gt ($.Values.geoserver.memoryMonitorInterval | default 0 | int) 0  }}
 geoserverpid=$(ps -aux | grep "java" | grep "tomcat"|awk -F ' ' '{print $2}')
 if [[ "${geoserverpid}" == "" ]]; then
-  memoryusage=""
+  resourceusage=""
 else
-  printf -v memoryusage "%%CPU: %s , Virtual Memory: %sMB , Physical Memory: %sMB" $(ps -o %cpu=,vsz=,rss= ${geoserverpid} | awk '{printf "%.1f %.0f %.0f",$1,$2/1024,$3/1024}')
+{{ $.Files.Get "static/resourceusage.sh" | indent 2 }}
 fi
   {{- else }}
-memoryusage=""
+resourceusage=""
   {{- end }}
 if [[ ${status} -gt 0 ]]; then
-  echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Startup : Geoserver is not ready. ${memoryusage} , ping: ${pingstatus} , pingtime: ${pingtime}" >> ${livenesslogfile}
+  echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Startup : Geoserver is not ready. ${resourceusage} , ping: ${pingstatus} , pingtime: ${pingtime}" >> ${livenesslogfile}
 else
   {{- if gt ($.Values.geoserver.memoryMonitorInterval | default 0 | int) 0  }}
   echo ${geoserverpid} > /tmp/geoserverpid
   echo "$(date -d '+{{- $.Values.geoserver.memoryMonitorInterval}} seconds' '+%s')" > /tmp/memorymonitornexttime
   {{- end }}
-  echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Startup : Geoserver is ready. ${memoryusage} , ping: ${pingstatus} , pingtime: ${pingtime}" >> ${livenesslogfile}
+  echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Startup : Geoserver is ready. ${resourceusage} , ping: ${pingstatus} , pingtime: ${pingtime}" >> ${livenesslogfile}
 fi
 
-if [[ "${memoryusage}" != "" ]]; then
-  sed -i -e "s/<span id=\"monitortime\">[^<]*<\/span>/<span id=\"monitortime\">$(date '+%Y-%m-%d %H:%M:%S')<\/span>/" -e "s/<span id=\"resourceusage\">[^<]*<\/span>/<span id=\"resourceusage\">${memoryusage}<\/span>/g" ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html
+if [[ "${resourceusage}" != "" ]]; then
+  sed -i -e "s/<span id=\"monitortime\">[^<]*<\/span>/<span id=\"monitortime\">$(date '+%Y-%m-%d %H:%M:%S')<\/span>/" -e "s/<span id=\"resourceusage\">[^<]*<\/span>/<span id=\"resourceusage\">${resourceusage}<\/span>/g" ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html
 fi
 
 {{- end }}

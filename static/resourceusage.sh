@@ -1,0 +1,1 @@
+resourceusage="$(ps -o %cpu=,vsz=,rss= ${geoserverpid} | awk '{printf "%%CPU: %.1f , Virtual Memory: %.0fMB , Physical Memory: %.0fMB",$1,$2/1024,$3/1024}') , $(df --output="size,used,pcent" -BG /geoserver/data/gwc | sed 1d | awk '{printf "GWC Volume : %s(%s of %s)",$3,$2,$1}')"

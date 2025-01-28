@@ -22,7 +22,7 @@ binaryData:
   serverinfo.html: >- 
 {{ $.Files.Get "static/serverinfo.html" | b64enc | indent 4 }}
   starthistory.html: >- 
-{{ include "geoserver.starthistory.html" . | b64enc | indent 4 }}
+{{ $.Files.Get "static/geoserver_restarthistory.html" | b64enc | indent 4 }}
 {{- if ($.Values.geoserver.clustering | default false) }}
   broker.xml: >- 
 {{ include "geocluster.broker.xml" . | b64enc | indent 4 }}
