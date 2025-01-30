@@ -130,24 +130,28 @@ if [[ $status -eq 0 ]]; then
           nextRestartTime=$(date -d "${nextRestartTime}+${dayOffset} days" '+%Y-%m-%d %H:%M:%S')
         fi
       fi
+
       nextRestartSeconds=$(date -d "${nextRestartTime}" '+%s')
       sed -i "s/<span id=\"nextrestarttime\">[^<]*<\/span>/<span id=\"nextrestarttime\">${nextRestartTime}<\/span>/" ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html
       echo ${nextRestartSeconds} > ${GEOSERVER_DATA_DIR}/www/server/nextrestarttime
+      touch ${GEOSERVER_DATA_DIR}/www/server/restartenabled
       {{- if ge $log_level ((get $log_levels "INFO") | int) }}
       echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Startup : next scheduled restart time is ${nextRestartTime}" >> ${livenesslogfile}
       {{- end }}
     else
-      sed -i "s/<span id=\"nextrestarttime\">[^<]*<\/span>/<span id=\"nextrestarttime\">N\/A<\/span>/" ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html
-      nextRestartTime="N/A"
-      rm -rf ${GEOSERVER_DATA_DIR}/www/server/nextrestarttime
+      nextRestartTime="Disabled"
+      sed -i "s/<span id=\"nextrestarttime\">[^<]*<\/span>/<span id=\"nextrestarttime\">${nextRestartTime}<\/span>/" ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html
+      echo ${nextRestartTime} > ${GEOSERVER_DATA_DIR}/www/server/nextrestarttime
+      rm -rf ${GEOSERVER_DATA_DIR}/www/server/restartenabled
       {{- if ge $log_level ((get $log_levels "INFO") | int) }}
       echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Startup : next scheduled restart time is N/A" >> ${livenesslogfile}
       {{- end }}
     fi
     {{- else }}
-    sed -i "s/<span id=\"nextrestarttime\">[^<]*<\/span>/<span id=\"nextrestarttime\">N\/A<\/span>/" ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html
-    rm -rf ${GEOSERVER_DATA_DIR}/www/server/nextrestarttime
-    nextRestartTime="N/A"
+    nextRestartTime="Disabled"
+    sed -i "s/<span id=\"nextrestarttime\">[^<]*<\/span>/<span id=\"nextrestarttime\">${nextRestartTime}<\/span>/" ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html
+    echo ${nextRestartTime} > ${GEOSERVER_DATA_DIR}/www/server/nextrestarttime
+    rm -rf ${GEOSERVER_DATA_DIR}/www/server/restartenabled
     {{- if ge $log_level ((get $log_levels "INFO") | int) }}
     echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Startup : next scheduled restart time is N/A" >> ${livenesslogfile}
     {{- end }}
@@ -184,8 +188,7 @@ if [[ $status -eq 0 ]]; then
     else
         startingtime="${minutes} ${seconds}"
     fi
-
-    sed -i -e "s/<span id=\"starttime\">[^<]*<\/span>/<span id=\"starttime\">${starttime}<\/span>/" -e "s/<span id=\"readytime\">[^<]*<\/span>/<span id=\"readytime\">${readytime}<\/span>/" -e "s/<span id=\"startingtime\">[^<]*<\/span>/<span id=\"startingtime\">${startingtime}<\/span>/" -e "s/<span id=\"initialmemory\">[^<]*<\/span>/<span id=\"initialmemory\">${INITIAL_MEMORY}<\/span>/" -e "s/<span id=\"maxmemory\">[^<]*<\/span>/<span id=\"maxmemory\">${MAXIMUM_MEMORY}<\/span>/" ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html
+    sed -i -e "s/<span id=\"tomcat_version\">[^<]*<\/span>/<span id=\"tomcat_version\">${TOMCAT_VERSION}<\/span>/" -e "s/<span id=\"starttime\">[^<]*<\/span>/<span id=\"starttime\">${starttime}<\/span>/" -e "s/<span id=\"readytime\">[^<]*<\/span>/<span id=\"readytime\">${readytime}<\/span>/" -e "s/<span id=\"startingtime\">[^<]*<\/span>/<span id=\"startingtime\">${startingtime}<\/span>/" -e "s/<span id=\"initialmemory\">[^<]*<\/span>/<span id=\"initialmemory\">${INITIAL_MEMORY}<\/span>/" -e "s/<span id=\"maxmemory\">[^<]*<\/span>/<span id=\"maxmemory\">${MAXIMUM_MEMORY}<\/span>/" ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html
 
     echo ${readyseconds} > ${GEOSERVER_DATA_DIR}/www/server/starttime
 

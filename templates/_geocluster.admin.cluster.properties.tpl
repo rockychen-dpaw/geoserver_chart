@@ -1,6 +1,6 @@
 {{- define "geoserver.admin.cluster.properties" }}
 CLUSTER_CONFIG_DIR=${CLUSTER_CONFIG_DIR}
-instanceName=${INSTANCE_STRING}
+instanceName={{ $.Release.Name }}-geoclusteradmin
 durable=${CLUSTER_DURABILITY}
 brokerURL=failover:(${BROKER_URL})
 embeddedBroker=disabled

@@ -500,9 +500,13 @@ spec:
             exec:
               command:
                 - /geoserver/bin/geoserver_liveness
-          {{- if $.Values.geoserver.resources }}
+          {{- if or $.Values.geoserver.resources $.Values.geoserver.adminResources }}
           resources:
+            {{- if $.Values.geoserver.adminResources }}
 {{ $.Values.geoserver.adminResources | toYaml | indent 12 }}
+            {{- else }}
+{{ $.Values.geoserver.resources | toYaml | indent 12 }}
+            {{- end }}
           {{- end }}
           securityContext:
             allowPrivilegeEscalation: false

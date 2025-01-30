@@ -27,7 +27,13 @@ if [[ "{{ $.Release.Name}}-geocluster-{{$i}}" != "${HOSTNAME}" ]] && [[ ${status
   status=$((${status} + $?))
   if [[ $status -eq 0 ]]; then
     remoteGeoserverNextRestartTime=$(cat /tmp/remotegeoserver_nextrestarttime)
-    if [[ ${remoteGeoserverNextRestartTime} -lt ${nextRestartSeconds} ]]; then
+    if [[ "${remoteGeoserverNextRestartTime}" == "Disabled" ]]; then
+      {{- if ge $log_level ((get $log_levels "ERROR") | int) }}
+      echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Liveness : The remote geoserver(http://${server}:8080/geoserver) is online and its restart feature is disabled, can restart before the remote geoserver." >> ${livenesslogfile}
+      {{- else }}
+      :
+      {{- end }}
+    elif [[ ${remoteGeoserverNextRestartTime} -lt ${nextRestartSeconds} ]]; then
       #remote geoserver should be restarted before this geoserver
       #can't restart this geoserver now
       status=99

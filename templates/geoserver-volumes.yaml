@@ -38,7 +38,7 @@ spec:
     - {{ $config.accessMode | default "ReadWriteOnce" }}
   resources:
     requests:
-      storage: {{ $config.storage}}
+      storage: {{ $config.storage4Admin | default $config.storage }}
   storageClassName: {{ $config.storageClassName | default "managed-csi-retain" }}
   volumeMode: {{ $config.volumeMode | default "Filesystem" }}
 {{- end }}

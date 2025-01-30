@@ -6,7 +6,7 @@
 {{- end }}
 {{- $log_level := (get $log_levels $log_levelname) | int }}
 
-if [[ -f ${GEOSERVER_DATA_DIR}/www/server/nextrestarttime ]]; then
+if [[ -f ${GEOSERVER_DATA_DIR}/www/server/restartenabled ]]; then
   nextRestartSeconds=$(cat ${GEOSERVER_DATA_DIR}/www/server/nextrestarttime)
   now=$(date '+%Y-%m-%d %H:%M:%S')
   hour=$(date -d "${now}" '+%H')
