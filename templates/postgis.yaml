@@ -153,6 +153,10 @@ spec:
       tolerations:
 {{ $.Values.postgis.tolerations | toYaml | indent 8 }}
       {{- end }}
+      {{- if $.Values.postgis.nodeSelector }}
+      nodeSelector:
+{{ $.Values.postgis.nodeSelector | toYaml | indent 8 }}
+      {{- end }}
       {{- if not (empty $.Values.postgis.volumes) }}
       volumes:
       - name: scripts

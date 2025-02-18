@@ -551,7 +551,7 @@ spec:
             {{- end }}  
             {{- end }}
             {{- end }}
-            {{- range $name,$config := $.Values.geoserver.volumeClaimTemplates }}
+            {{- range $name,$config := $.Values.geoserver.adminVolumes }}
             {{- range $i,$mount := $config.mounts }}
             - mountPath: {{ $mount.mountPath }}
               name: {{ $name }}
@@ -615,7 +615,7 @@ spec:
         persistentVolumeClaim:
           claimName: {{ $.Release.Name }}-geoserver-{{ $name }}
       {{- end }}
-      {{- range $name,$config := $.Values.geoserver.volumeClaimTemplates | default dict }}
+      {{- range $name,$config := $.Values.geoserver.adminVolumes | default dict }}
       - name: {{ $name }}
         persistentVolumeClaim:
           claimName: {{ $.Release.Name }}-geoclusteradmin-{{ $name }}

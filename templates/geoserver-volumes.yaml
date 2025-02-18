@@ -24,7 +24,7 @@ spec:
 {{- end }}
 
 {{- if not $adminServerIsWorker }}
-{{- range $name,$config := $.Values.geoserver.volumeClaimTemplates | default dict }}
+{{- range $name,$config := $.Values.geoserver.adminVolumes | default dict }}
 {{- $count = add $count 1}}
 {{- if gt $count 1 }}
 ---
@@ -38,7 +38,7 @@ spec:
     - {{ $config.accessMode | default "ReadWriteOnce" }}
   resources:
     requests:
-      storage: {{ $config.storage4Admin | default $config.storage }}
+      storage: {{ $config.storage }}
   storageClassName: {{ $config.storageClassName | default "managed-csi-retain" }}
   volumeMode: {{ $config.volumeMode | default "Filesystem" }}
 {{- end }}
