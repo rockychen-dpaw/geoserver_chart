@@ -1,0 +1,8 @@
+<checks>
+  <regex>
+    <name>static resources</name>
+    <enabled>true</enabled>
+    <regex>^https://static.dbca.wa.gov.au/.*$</regex>
+  </regex>
+  <enabled>true</enabled>
+</checks>
