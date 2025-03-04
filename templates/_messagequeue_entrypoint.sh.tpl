@@ -17,6 +17,15 @@
 # limitations under the License.
 ################################################################################
 
+#clean the temporary data
+rm -rf ${ACTIVEMQ_HOME}/tmp/*
+
+#clean outdated log file
+find ${ACTIVEMQ_HOME}/data/kahadb -name "*.log" -mtime +4 -exec rm -f {} \;
+
+#next clean time
+echo "$(date -d '+1 day' '+%s')" > /tmp/nextcleantime
+
 # Transport/connection security
 if [ -n "${ACTIVEMQ_CONNECTION_USER}" ]; then
   if [ -f "${ACTIVEMQ_HOME}/conf/connection.security.enabled" ]; then

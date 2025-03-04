@@ -110,6 +110,9 @@ spec:
           - name: scripts
             mountPath: "/usr/local/bin/entrypoint.sh"
             subPath: "entrypoint"
+          - name: scripts
+            mountPath: "/usr/local/bin/mq_liveness.sh"
+            subPath: "mq_liveness"
           - name: shared-data
             mountPath: "/etc/passwd"
             subPath: "passwd"
@@ -147,12 +150,11 @@ spec:
             failureThreshold: {{ $livenessProbe.failureThreshold | default 2 }}
             successThreshold: {{ $livenessProbe.successThreshold | default 1 }}
             initialDelaySeconds: {{ $livenessProbe.initialDelaySeconds | default 1 }}
-            timeoutSeconds: {{ $livenessProbe.timeoutSeconds | default 1 }}
+            timeoutSeconds: {{ ceil ((addf $livenessProbe.timeoutSeconds 0.5) | default 2) }}
             periodSeconds: {{ $livenessProbe.periodSeconds | default 2 }}
-            httpGet:
-              scheme: HTTP
-              port: 8161
-              path: /index.html
+            exec:
+              command:
+                - mq_liveness.sh
       dnsPolicy: ClusterFirst
       restartPolicy: Always
       schedulerName: default-scheduler

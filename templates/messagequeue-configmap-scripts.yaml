@@ -10,4 +10,6 @@ binaryData:
 {{ include "messagequeue.init_mq" . | b64enc | indent 4 }}
   entrypoint: >- 
 {{ include "messagequeue.entrypoint" . | b64enc | indent 4 }}
+  mq_liveness: >- 
+{{ include "messagequeue.mq_liveness" . | b64enc | indent 4 }}
 {{- end }}
