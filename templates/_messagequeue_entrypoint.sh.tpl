@@ -21,10 +21,10 @@
 rm -rf ${ACTIVEMQ_HOME}/tmp/*
 
 #clean outdated log file
-find ${ACTIVEMQ_HOME}/data/kahadb -name "*.log" -mtime +4 -exec rm -f {} \;
+#find ${ACTIVEMQ_HOME}/data/kahadb -name "*.log" -mtime +4 -exec rm -f {} \;
 
 #next clean time
-echo "$(date -d '+1 day' '+%s')" > /tmp/nextcleantime
+#echo "$(date -d '+1 day' '+%s')" > /tmp/nextcleantime
 
 # Transport/connection security
 if [ -n "${ACTIVEMQ_CONNECTION_USER}" ]; then

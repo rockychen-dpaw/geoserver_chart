@@ -116,4 +116,23 @@ appender.auditlog.policies.size.type=SizeBasedTriggeringPolicy
 appender.auditlog.policies.size.size=2MB
 appender.auditlog.strategy.type = DefaultRolloverStrategy
 appender.auditlog.strategy.max = 10
+
+logger.kahadb.name=org.apache.activemq.store.kahadb.MessageDatabase
+logger.kahadb.additivity=false
+logger.kahadb.level=TRACE
+logger.kahadb.appenderRef.kahadb.ref=Kahadb
+
+appender.kahadb.type=RollingRandomAccessFile
+appender.kahadb.name=Kahadb
+appender.kahadb.fileName=${sys:activemq.data}/kahadb.log
+appender.kahadb.filePattern=${sys:activemq.data}/kahadb.log.%i
+appender.kahadb.append=true
+appender.kahadb.layout.type=PatternLayout
+appender.kahadb.layout.Pattern=%m%n 
+appender.kahadb.policies.type=Policies
+appender.kahadb.policies.size.type=SizeBasedTriggeringPolicy
+appender.kahadb.policies.size.size=128KB
+appender.kahadb.strategy.type = DefaultRolloverStrategy
+appender.kahadb.strategy.max = 10
+
 {{- end}}
