@@ -1,0 +1,10 @@
+<userGroupService>
+  <id>41c68f0f:190c478319a:-7fea</id>
+  <name>dbca</name>
+  <className>org.geoserver.security.xml.XMLUserGroupService</className>
+  <fileName>dbca-users.xml</fileName>
+  <checkInterval>1000</checkInterval>
+  <validating>true</validating>
+  <passwordEncoderName>digestPasswordEncoder</passwordEncoderName>
+  <passwordPolicyName>default</passwordPolicyName>
+</userGroupService>

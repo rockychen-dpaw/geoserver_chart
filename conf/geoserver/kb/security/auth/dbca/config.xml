@@ -1,0 +1,6 @@
+<usernamePassword>
+  <id>-1e446372:190ddc000f2:-7fc8</id>
+  <name>dbca</name>
+  <className>org.geoserver.security.auth.UsernamePasswordAuthenticationProvider</className>
+  <userGroupServiceName>dbca</userGroupServiceName>
+</usernamePassword>
