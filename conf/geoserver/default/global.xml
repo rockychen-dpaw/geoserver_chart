@@ -9,6 +9,7 @@
     </contact>
     <charset>UTF-8</charset>
     <numDecimals>8</numDecimals>
+    <proxyBaseUrl>https://${X-Forwarded-Host}/geoserver</proxyBaseUrl>
     <verbose>true</verbose>
     <verboseExceptions>false</verboseExceptions>
     <metadata>
@@ -22,7 +23,7 @@
     <localWorkspaceIncludesPrefix>false</localWorkspaceIncludesPrefix>
     <showCreatedTimeColumnsInAdminList>false</showCreatedTimeColumnsInAdminList>
     <showModifiedTimeColumnsInAdminList>false</showModifiedTimeColumnsInAdminList>
-    <useHeadersProxyURL>false</useHeadersProxyURL>
+    <useHeadersProxyURL>true</useHeadersProxyURL>
   </settings>
   <jai>
     <allowInterpolation>false</allowInterpolation>
