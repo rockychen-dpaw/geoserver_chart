@@ -1,3 +1,4 @@
+{{- if $.Values.geoserver }}
 {{- $count := 0 }}
 {{- $adminServerIsWorker :=  true }}
 {{- if hasKey $.Values.geoserver "adminServerIsWorker" }}
@@ -41,6 +42,7 @@ spec:
       storage: {{ $config.storage }}
   storageClassName: {{ $config.storageClassName | default "managed-csi-retain" }}
   volumeMode: {{ $config.volumeMode | default "Filesystem" }}
+{{- end }}
 {{- end }}
 {{- end }}
 

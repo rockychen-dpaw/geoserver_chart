@@ -1,4 +1,4 @@
-{{- if ($.Values.geoserver.clustering | default false) }}
+{{- if and $.Values.geoserver ($.Values.geoserver.clustering | default false) }}
 {{- $startupProbe :=  $.Values.geoserver.startupProbe | default dict }}
 {{- $livenessProbe :=  $.Values.geoserver.livenessProbe | default dict }}
 {{- $adminServerIsWorker :=  true }}

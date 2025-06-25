@@ -1,4 +1,4 @@
-{{- if and ($.Values.geoserver.clustering | default false)  (gt ($.Values.geoserver.replicas | default 1 | int) 1) }}
+{{- if and $.Values.geoserver ($.Values.geoserver.clustering | default false)  (gt ($.Values.geoserver.replicas | default 1 | int) 1) }}
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:

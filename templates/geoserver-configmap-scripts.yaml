@@ -1,3 +1,4 @@
+{{- if $.Values.geoserver }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -30,3 +31,5 @@ binaryData:
   geoserver_liveness: >- 
 {{ include "geoserver.geoserver_liveness" . | b64enc | indent 4 }}
   {{- end }}
+
+{{- end }}

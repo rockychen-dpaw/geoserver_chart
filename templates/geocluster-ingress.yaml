@@ -1,4 +1,4 @@
-{{- if $.Values.geoserver.clustering | default false }}
+{{- if and $.Values.geoserver ($.Values.geoserver.clustering | default false) }}
 {{- $adminServerIsWorker :=  true }}
 {{- if hasKey $.Values.geoserver "adminServerIsWorker" }}
   {{- $adminServerIsWorker =  $.Values.geoserver.adminServerIsWorker }}

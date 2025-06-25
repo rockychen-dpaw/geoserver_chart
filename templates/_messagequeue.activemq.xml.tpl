@@ -32,7 +32,7 @@
     <!--
         The <broker> element is used to configure the ActiveMQ broker.
     -->
-    <broker xmlns="http://activemq.apache.org/schema/core" brokerName="localhost" dataDirectory="${activemq.data}">
+    <broker xmlns="http://activemq.apache.org/schema/core" brokerName="localhost" dataDirectory="${activemq.data}" schedulerSupport="true">
 
         <destinationPolicy>
             <policyMap>
@@ -47,8 +47,11 @@
 
                     -->
                   <pendingMessageLimitStrategy>
-                    <constantPendingMessageLimitStrategy limit="1000"/>
+                    <constantPendingMessageLimitStrategy limit="2000"/>
                   </pendingMessageLimitStrategy>
+                  <deadLetterStrategy>
+                    <sharedDeadLetterStrategy processExpired="false" />
+                  </deadLetterStrategy>
                 </policyEntry>
               </policyEntries>
             </policyMap>
@@ -74,7 +77,7 @@
             http://activemq.apache.org/persistence.html
         -->
         <persistenceAdapter>
-            <kahaDB directory="${activemq.data}/kahadb"/>
+            <kahaDB directory="${activemq.data}/kahadb" enableAckCompaction="false" ignoreMissingJournalfiles="true"/>
         </persistenceAdapter>
 
 
@@ -89,10 +92,10 @@
                     <memoryUsage percentOfJvmHeap="70" />
                 </memoryUsage>
                 <storeUsage>
-                    <storeUsage limit="100 gb"/>
+                    <storeUsage limit="1 gb"/>
                 </storeUsage>
                 <tempUsage>
-                    <tempUsage limit="50 gb"/>
+                    <tempUsage limit="1 gb"/>
                 </tempUsage>
             </systemUsage>
         </systemUsage>
@@ -118,6 +121,19 @@
         </shutdownHooks>
         <plugins>
             <timeStampingBrokerPlugin ttlCeiling="{{ $.Values.messagequeue.messageTTL | default 86400000 | int64}}" zeroExpirationOverride="{{ $.Values.messagequeue.messageTTL | default 86400000 | int64 }}"/>
+            <discardingDLQBrokerPlugin dropAll="true" dropTemporaryTopics="true" dropTemporaryQueues="true"/>
+            <redeliveryPlugin fallbackToDeadLetter="false" sendToDlqIfMaxRetriesExceeded="false">
+                <redeliveryPolicyMap>
+                    <redeliveryPolicyMap>
+                        <defaultEntry>
+                            <!-- the fallback policy for all other destinations -->
+                            <redeliveryPolicy maximumRedeliveries="5"
+                                              initialRedeliveryDelay="5000"
+                                              redeliveryDelay="10000"/>
+                        </defaultEntry>
+                    </redeliveryPolicyMap>
+                </redeliveryPolicyMap>
+            </redeliveryPlugin>
         </plugins>
     </broker>
 

@@ -1,4 +1,4 @@
-{{- if not ($.Values.geoserver.clustering | default false) }}
+{{- if and $.Values.geoserver (not ($.Values.geoserver.clustering | default false)) }}
 apiVersion: v1
 kind: Service
 metadata:

@@ -113,6 +113,9 @@ spec:
           - name: scripts
             mountPath: "/usr/local/bin/mq_liveness.sh"
             subPath: "mq_liveness"
+          - name: scripts
+            mountPath: "/usr/local/bin/mq_startup.sh"
+            subPath: "mq_startup"
           - name: shared-data
             mountPath: "/etc/passwd"
             subPath: "passwd"
@@ -142,10 +145,9 @@ spec:
             initialDelaySeconds: {{ $startupProbe.initialDelaySeconds | default 0 }}
             timeoutSeconds: {{ $startupProbe.timeoutSeconds | default 1 }}
             periodSeconds: {{ $startupProbe.periodSeconds | default 1 }}
-            httpGet:
-              scheme: HTTP
-              port: 8161
-              path: /index.html
+            exec:
+              command:
+                - mq_startup.sh
           livenessProbe:
             failureThreshold: {{ $livenessProbe.failureThreshold | default 2 }}
             successThreshold: {{ $livenessProbe.successThreshold | default 1 }}

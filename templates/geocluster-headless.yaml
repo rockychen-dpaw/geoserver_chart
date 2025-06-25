@@ -1,5 +1,5 @@
 #create a headless service for geocluster admin
-{{- if ($.Values.geoserver.clustering | default false) }}
+{{- if and $.Values.geoserver ($.Values.geoserver.clustering | default false) }}
 apiVersion: v1
 kind: Service
 metadata:
