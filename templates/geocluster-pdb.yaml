@@ -2,10 +2,10 @@
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  name: {{ $.Release.Name }}-geocluster
+  name: {{ $.Release.Name }}-geocluster-workers
 spec:
   minAvailable: {{ sub $.Values.geoserver.replicas 1 }}
   selector:
     matchLabels:
-      workload.user.cattle.io/workloadselector: apps.statefulset-{{ $.Release.Namespace}}-{{ $.Release.Name }}-geocluster
+      workload.user.cattle.io/workloadselector: apps.statefulset-{{ $.Release.Namespace}}-{{ $.Release.Name }}-geocluster-workers
 {{- end }}

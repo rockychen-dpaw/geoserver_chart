@@ -1,0 +1,24 @@
+#create a headless service for geocluster admin
+{{- if and $.Values.geoserver ($.Values.geoserver.clustering | default false) (contains "hz-cluster-plugin" $.Values.geoserver.configmaps.settings.COMMUNITY_EXTENSIONS) }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $.Release.Name }}-geocluster-hazelcast-headless
+spec:
+  clusterIP: None
+  clusterIPs:
+    - None
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+    - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+    - name: hazelcast
+      port: 5701
+      protocol: TCP
+      targetPort: 5701
+  selector:
+    workload.user.cattle.io/geoclusterselector: apps.statefulset-{{ $.Release.Namespace}}-{{ $.Release.Name }}-geocluster
+  sessionAffinity: None
+  type: ClusterIP
+{{- end }}

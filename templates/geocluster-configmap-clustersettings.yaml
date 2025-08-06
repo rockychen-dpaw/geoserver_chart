@@ -1,0 +1,22 @@
+{{- if and $.Values.geoserver ($.Values.geoserver.clustering | default false) }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $.Release.Name }}-geoserver-configmap-clustersettings
+  annotations:
+    field.cattle.io/description: "geoserver cluster settings"
+data:
+  {{- if contains "jms-cluster-plugin" $.Values.geoserver.configmaps.settings.COMMUNITY_EXTENSIONS }}
+  CLUSTERING: "true"
+  CLUSTER_DURABILITY: "false"
+    {{- if $.Values.geoserver.brokerUrl }}
+  BROKER_URL: {{ $.Values.geoserver.brokerUrl | quote }}
+    {{- else }}
+  BROKER_URL: "tcp://{{ $.Release.Name }}-mq-headless:61616"
+    {{- end }}
+  EMBEDDED_BROKER: "disabled"
+  {{- else }}
+  CLUSTERING: "false"
+  GEOSERVER_LOG_DIR: "/geoserver/data/logs/logging"
+  {{- end }}
+{{- end }}

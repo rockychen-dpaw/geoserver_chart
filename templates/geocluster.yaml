@@ -12,17 +12,19 @@ metadata:
 spec:
   selector:
     matchLabels:
-      workload.user.cattle.io/workloadselector: apps.statefulset-{{ $.Release.Namespace}}-{{ $.Release.Name }}-geocluster
+      workload.user.cattle.io/workloadselector: apps.statefulset-{{ $.Release.Namespace}}-{{ $.Release.Name }}-geocluster-workers
+      workload.user.cattle.io/geoclusterselector: apps.statefulset-{{ $.Release.Namespace}}-{{ $.Release.Name }}-geocluster
   podManagementPolicy: OrderedReady
   replicas: {{ $.Values.geoserver.replicas | default 2 }}
   revisionHistoryLimit: 10
-  serviceName: {{ $.Release.Name }}-geocluster-headless
+  serviceName: {{ $.Release.Name }}-geocluster-workers-headless
   template:
     metadata:
       creationTimestamp: null
       labels:
         #same as matchLabels
-        workload.user.cattle.io/workloadselector: apps.statefulset-{{ $.Release.Namespace}}-{{ $.Release.Name }}-geocluster
+        workload.user.cattle.io/workloadselector: apps.statefulset-{{ $.Release.Namespace}}-{{ $.Release.Name }}-geocluster-workers
+        workload.user.cattle.io/geoclusterselector: apps.statefulset-{{ $.Release.Namespace}}-{{ $.Release.Name }}-geocluster
     spec:
       {{- if and (gt ($.Values.geoserver.replicas | default 1 | int) 1 ) (get $.Values.geoserver "topologySpreadConstraints") }}
       #only include the topology if replicas is greater than 1
@@ -46,18 +48,6 @@ spec:
           command:
             - /geoserver/bin/init_geoserver
           env:
-            - name: CLUSTER_DURABILITY
-              value: "false"
-            - name: BROKER_URL
-            {{- if $.Values.geoserver.brokerUrl }}
-              value: {{ $.Values.geoserver.brokerUrl | quote }}
-            {{- else }}
-              value: "tcp://{{ $.Release.Name }}-mq-headless:61616"
-            {{- end }}
-            - name: CLUSTERING
-              value: "true"
-            - name: EMBEDDED_BROKER
-              value: "disabled"
             {{- range $key,$value := $.Values.geoserver.envs | default dict }}
             - name: {{ $key }}
               value: {{ $value | quote }}
@@ -68,6 +58,9 @@ spec:
                 name: {{ $.Release.Name }}-geoserver-secret-{{ $name }}
                 optional: false
             {{- end }}
+            - configMapRef:
+                name: {{ $.Release.Name }}-geoserver-configmap-clustersettings
+                optional: false
             {{- range $name,$data := $.Values.geoserver.configmaps | default dict }}
             - configMapRef:
                 name: {{ $.Release.Name }}-geoserver-configmap-{{ $name }}
@@ -140,20 +133,8 @@ spec:
             {{- else }}
               value: {{ $.Values.geoserver.releaseTime | quote }}
             {{- end }}
-            - name: CLUSTERING
-              value: "true"
             - name: GEOSERVER_DISABLE_STATIC_WEB_FILES
               value: "false"
-            - name: CLUSTER_DURABILITY
-              value: "false"
-            - name: EMBEDDED_BROKER
-              value: "disabled"
-            - name: BROKER_URL
-            {{- if $.Values.geoserver.brokerUrl }}
-              value: {{ $.Values.geoserver.brokerUrl | quote }}
-            {{- else }}
-              value: "tcp://{{ $.Release.Name }}-mq-headless:61616"
-            {{- end }}
             {{- range $key,$value := $.Values.geoserver.envs | default dict }}
             - name: {{ $key }}
               value: {{ $value | quote }}
@@ -164,6 +145,9 @@ spec:
                 name: {{ $.Release.Name }}-geoserver-secret-{{ $name }}
                 optional: false
             {{- end }}
+            - configMapRef:
+                name: {{ $.Release.Name }}-geoserver-configmap-clustersettings
+                optional: false
             {{- range $name,$data := $.Values.geoserver.configmaps | default dict }}
             - configMapRef:
                 name: {{ $.Release.Name }}-geoserver-configmap-{{ $name }}
@@ -338,6 +322,7 @@ spec:
   selector:
     matchLabels:
       workload.user.cattle.io/workloadselector: apps.deployment-{{ $.Release.Namespace}}-{{ $.Release.Name }}-geoclusteradmin
+      workload.user.cattle.io/geoclusterselector: apps.statefulset-{{ $.Release.Namespace}}-{{ $.Release.Name }}-geocluster
   strategy:
     rollingUpdate:
       maxSurge: 25%
@@ -348,6 +333,7 @@ spec:
       creationTimestamp: null
       labels:
         workload.user.cattle.io/workloadselector: apps.deployment-{{ $.Release.Namespace}}-{{ $.Release.Name }}-geoclusteradmin
+        workload.user.cattle.io/geoclusterselector: apps.statefulset-{{ $.Release.Namespace}}-{{ $.Release.Name }}-geocluster
     spec:
       initContainers:
         - name: {{ $.Release.Name }}-geoclusteradmin-init
@@ -356,18 +342,6 @@ spec:
           command:
             - /geoserver/bin/init_geoserver
           env:
-            - name: CLUSTER_DURABILITY
-              value: "false"
-            - name: BROKER_URL
-            {{- if $.Values.geoserver.brokerUrl }}
-              value: {{ $.Values.geoserver.brokerUrl | quote }}
-            {{- else }}
-              value: "tcp://{{ $.Release.Name }}-mq-headless:61616"
-            {{- end }}
-            - name: CLUSTERING
-              value: "true"
-            - name: EMBEDDED_BROKER
-              value: "disabled"
             {{- range $key,$value := $.Values.geoserver.envs | default dict }}
             - name: {{ $key }}
               value: {{ $value | quote }}
@@ -378,6 +352,9 @@ spec:
                 name: {{ $.Release.Name }}-geoserver-secret-{{ $name }}
                 optional: false
             {{- end }}
+            - configMapRef:
+                name: {{ $.Release.Name }}-geoserver-configmap-clustersettings
+                optional: false
             {{- range $name,$data := $.Values.geoserver.configmaps | default dict }}
             - configMapRef:
                 name: {{ $.Release.Name }}-geoserver-configmap-{{ $name }}
@@ -448,20 +425,8 @@ spec:
             {{- else }}
               value: {{ $.Values.geoserver.adminReleaseTime | quote }}
             {{- end }}
-            - name: CLUSTERING
-              value: "true"
             - name: GEOSERVER_DISABLE_STATIC_WEB_FILES
               value: "false"
-            - name: CLUSTER_DURABILITY
-              value: "false"
-            - name: EMBEDDED_BROKER
-              value: "disabled"
-            - name: BROKER_URL
-            {{- if $.Values.geoserver.brokerUrl }}
-              value: {{ $.Values.geoserver.brokerUrl | quote }}
-            {{- else }}
-              value: "tcp://{{ $.Release.Name }}-mq-headless:61616"
-            {{- end }}
             {{- range $key,$value := $.Values.geoserver.envs | default dict }}
             - name: {{ $key }}
               value: {{ $value | quote }}
@@ -472,6 +437,9 @@ spec:
                 name: {{ $.Release.Name }}-geoserver-secret-{{ $name }}
                 optional: false
             {{- end }}
+            - configMapRef:
+                name: {{ $.Release.Name }}-geoserver-configmap-clustersettings
+                optional: false
             {{- range $name,$data := $.Values.geoserver.configmaps | default dict }}
             - configMapRef:
                 name: {{ $.Release.Name }}-geoserver-configmap-{{ $name }}

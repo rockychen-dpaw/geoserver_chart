@@ -31,7 +31,7 @@ if [[ $status -eq 0 ]]; then
     #geoserver is ready to use
 
     #set geoserver next restart time
-    {{- if and ($.Values.geoserver.clustering | default false) (or $adminServerIsWorker (gt ($.Values.geoserver.replicas | default 1 | int) 1)) (get $.Values.geoserver "restartPolicy") (get $.Values.geoserver.restartPolicy "restartSchedule") }}
+    {{- if and ($.Values.geoserver.clustering | default false) (get $.Values.geoserver "restartPolicy") (get $.Values.geoserver.restartPolicy "restartSchedule") }}
     #populate all restart configuration
     {{- $index := 0}}
     {{- $found := 0}}
@@ -46,13 +46,13 @@ if [[ $status -eq 0 ]]; then
           {{- if or (eq $day (lower $d)) (eq (substr 0 3 $day) (lower $d)) }}
             {{- $found = 1 }}
           {{- end }}
-        {{- end }}
+        {{- end }} #end range: $config.restartDays
     
         {{- if eq $found 1 }}
     {{ $server }}RestartDay[{{$index}}]={{add $i 1}}
           {{- $index = add $index 1 }}
         {{- end }}
-      {{- end }}
+      {{- end }} #end range: weekday list
     
     declare -a {{ $server }}RestartTimes
       {{- if $config.restartTimes }}
@@ -61,34 +61,29 @@ if [[ $status -eq 0 ]]; then
         {{- end }}
       {{- else }}
     {{ $server }}RestartTimes[0]={{2}}
-      {{- end }}
-    {{- end }}
+      {{- end }} # end if: $config.restartTimes
+
+    {{- end }} #end range: restartSchedule
     
     #get the restart config for this server
     {{- if $adminServerIsWorker }}
     key="server${HOSTNAME#{{ $.Release.Name }}-geocluster-*}"
     {{- else }}
-    if [[ ${GEOCLUSTER_ROLE} == "admin" ]]; then
-      key="adminServer"
-    else
-      {{- if gt ($.Values.geoserver.replicas | default 1 | int) 1 }}
+    if [[ ${GEOCLUSTER_ROLE} == "slave" ]]; then
       key="server${HOSTNAME#{{ $.Release.Name }}-geocluster-*}"
-      {{- else }}
-      key=""
-      {{- end }}
+    else
+      key="adminServer"
     fi
-    {{- end }}
+    {{- end }} #end if: $adminServerIsWorker
 
-    if [[ "${key}" != "" ]]; then
-      declare -n restartDays="${key}RestartDay"
-      declare -n restartTimes="${key}RestartTimes"
-    fi
+    declare -n restartDays="${key}RestartDay"
+    declare -n restartTimes="${key}RestartTimes"
     
     now=$(date '+%Y-%m-%d %H:%M:%S')
     today=$(date -d "${now}" '+%Y-%m-%d')
     seconds=$(date -d "${now}" '+%s')
     
-    if [[ "${key}" != "" ]] && [[ ${#restartDays[@]} -gt 0 ]]; then
+    if [[ ${#restartDays[@]} -gt 0 ]]; then
       #find next restart time
       nextRestartTime=""
       startTime=0
@@ -147,7 +142,7 @@ if [[ $status -eq 0 ]]; then
       echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Startup : next scheduled restart time is N/A" >> ${livenesslogfile}
       {{- end }}
     fi
-    {{- else }}
+    {{- else }} #else if: and ($.Values.geoserver.clustering | default false) (get $.Values.geoserver "restartPolicy") (get $.Values.geoserver.restartPolicy "restartSchedule") }}
     nextRestartTime="Disabled"
     sed -i "s/<span id=\"nextrestarttime\">[^<]*<\/span>/<span id=\"nextrestarttime\">${nextRestartTime}<\/span>/" ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html
     echo ${nextRestartTime} > ${GEOSERVER_DATA_DIR}/www/server/nextrestarttime
@@ -155,7 +150,8 @@ if [[ $status -eq 0 ]]; then
     {{- if ge $log_level ((get $log_levels "INFO") | int) }}
     echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Startup : next scheduled restart time is N/A" >> ${livenesslogfile}
     {{- end }}
-    {{- end }}
+
+    {{- end }} #end if: and ($.Values.geoserver.clustering | default false) (get $.Values.geoserver "restartPolicy") (get $.Values.geoserver.restartPolicy "restartSchedule") }}
 
     #write the start time
     startseconds=$(cat /tmp/geoserver_starttime)

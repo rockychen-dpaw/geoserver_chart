@@ -6,7 +6,7 @@
 
 {{- if $adminServerIsWorker }}
 if [[ "${HOSTNAME}" == "{{ $.Release.Name }}-geocluster-0" ]]; then
-  GEOCLUSTER_ROLE="admin"
+  GEOCLUSTER_ROLE="admin&worker"
 else
   GEOCLUSTER_ROLE="slave"
 fi

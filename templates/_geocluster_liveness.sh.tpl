@@ -20,43 +20,10 @@ LIVENESSLOG_EXPIREDAYS={{$.Values.geoserver.livenesslogExpiredays | default 30}}
 
 {{- if and (get $.Values.geoserver "restartPolicy") (get $.Values.geoserver.restartPolicy "restartSchedule") }}
 canRestart=0
-  {{- if $adminServerIsWorker }}
-    {{- if gt ($.Values.geoserver.replicas | default 1 | int) 1 }}
 source /geoserver/bin/geocluster_can_restart
-    {{- end }}
-  {{- else }}
-if [[ "${GEOCLUSTER_ROLE}" == "admin" ]]; then
-  source /geoserver/bin/geocluster_can_restart
-    {{- if (gt ($.Values.geoserver.replicas | default 1 | int) 1) }}
-else
-  source /geoserver/bin/geocluster_can_restart
-    {{- end }}
-fi
-  {{- end}}
 
 if [[ ${canRestart} -eq 1 ]]; then
-  {{- if $adminServerIsWorker }}
   source /geoserver/bin/geocluster_restart
-  {{- else }}
-  if [[ "${GEOCLUSTER_ROLE}" == "slave" ]]; then
-    source /geoserver/bin/geocluster_restart
-  else
-    #try to restart this geoserver
-    {{- if ge $log_level ((get $log_levels "ERROR") | int) }}
-      {{- if gt ($.Values.geoserver.memoryMonitorInterval | default 0 | int) 0  }}
-{{ $.Files.Get "static/resourceusage.sh" | indent 4 }}
-      {{- else }}
-    resourceusage=""
-      {{- end }}
-    echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Liveness: Try to restart the geocluster admin server. ${resourceusage}" >> ${livenesslogfile}
-    {{- end }}
-
-    if [[ "${resourceusage}" != "" ]]; then
-      sed -i -e "s/<span id=\"monitortime\">[^<]*<\/span>/<span id=\"monitortime\">$(date '+%Y-%m-%d %H:%M:%S')<\/span>/" -e "s/<span id=\"resourceusage\">[^<]*<\/span>/<span id=\"resourceusage\">${resourceusage}<\/span>/g" ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html
-    fi
-    exit 1
-  fi
-  {{- end }}
 fi
 {{- end}}
 

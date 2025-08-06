@@ -19,16 +19,22 @@ status=$((${status} + $?))
            {{- if $adminServerIsWorker }}
 reportFolder="${HOSTNAME}"
            {{- else }}
-if [[ "${GEOCLUSTER_ROLE}" == "admin" ]]; then
-reportFolder="{{ $.Release.Name }}-geoclusteradmin"
-else
+if [[ "${GEOCLUSTER_ROLE}" == "slave" ]]; then
 reportFolder="${HOSTNAME}"
+else
+reportFolder="{{ $.Release.Name }}-geoclusteradmin"
 fi
 
            {{- end }}
          {{- else }}
             #healcheck enabled for geocluster admin server
-if [[ "${GEOCLUSTER_ROLE}" == "admin" ]]; then
+if [[ "${GEOCLUSTER_ROLE}" == "slave" ]]; then
+    #slave server
+    echo "Copy /geoserver/settings/index_without_reports.html as index page"
+    cp /geoserver/settings/index_without_reports.html /geoserver/data/www/server/index.html
+    status=$((${status} + $?))
+    exit ${status}
+else
     #admin server
     echo "Copy /geoserver/settings/index.html as index page"
     cp /geoserver/settings/index.html /geoserver/data/www/server/index.html
@@ -38,12 +44,6 @@ if [[ "${GEOCLUSTER_ROLE}" == "admin" ]]; then
     {{- else }}
         reportFolder="{{ $.Release.Name }}-geoclusteradmin"
     {{- end }}
-else
-    #slave server
-    echo "Copy /geoserver/settings/index_without_reports.html as index page"
-    cp /geoserver/settings/index_without_reports.html /geoserver/data/www/server/index.html
-    status=$((${status} + $?))
-    exit ${status}
 fi
          {{- end }}
     {{- else }}

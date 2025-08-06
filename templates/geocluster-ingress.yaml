@@ -52,7 +52,7 @@ spec:
             pathType: Prefix
           - backend:
               service:
-                name: {{ $.Release.Name }}-geocluster
+                name: {{ $.Release.Name }}-geocluster-workers
                 port:
                   number: {{ $.Values.geoserver.port | default 8080 }}
             path: /
@@ -84,7 +84,7 @@ spec:
             pathType: Prefix
           - backend:
               service:
-                name: {{ $.Release.Name }}-geocluster
+                name: {{ $.Release.Name }}-geocluster-workers
                 port:
                   number: {{ $.Values.geoserver.port | default 8080 }}
             path: /

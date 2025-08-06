@@ -6,10 +6,20 @@ metadata:
   annotations:
     field.cattle.io/description: customized geoserver config files
 binaryData:
+{{- if and ($.Values.geoserver.clustering | default false) (contains "jms-cluster-plugin" $.Values.geoserver.configmaps.settings.COMMUNITY_EXTENSIONS) }}
   admin.cluster.properties: >- 
 {{ include "geoserver.admin.cluster.properties" . | b64enc | indent 4 }}
   slave.cluster.properties: >- 
 {{ include "geoserver.slave.cluster.properties" . | b64enc | indent 4 }}
+  broker.xml: >- 
+{{ include "geocluster.broker.xml" . | b64enc | indent 4 }}
+{{- end }}
+{{- if and ($.Values.geoserver.clustering | default false) (contains "hz-cluster-plugin" $.Values.geoserver.configmaps.settings.COMMUNITY_EXTENSIONS) }}
+  hazelcast.xml: >- 
+{{ include "geocluster.hazelcast.xml" . | b64enc | indent 4 }}
+  hazelcast_cluster.properties: >- 
+{{ include "geocluster.hazelcast_cluster.properties" . | b64enc | indent 4 }}
+{{- end }}
   index.html: >- 
 {{ $.Files.Get "static/geoserverindex.html" | b64enc | indent 4 }}
   index_without_reports.html: >- 
@@ -24,8 +34,4 @@ binaryData:
 {{ $.Files.Get "static/serverinfo.html" | b64enc | indent 4 }}
   starthistory.html: >- 
 {{ $.Files.Get "static/geoserver_restarthistory.html" | b64enc | indent 4 }}
-{{- if ($.Values.geoserver.clustering | default false) }}
-  broker.xml: >- 
-{{ include "geocluster.broker.xml" . | b64enc | indent 4 }}
-{{- end }}
 {{- end }}

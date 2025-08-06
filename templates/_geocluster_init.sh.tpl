@@ -29,13 +29,26 @@ if [[ "${GEOWEBCACHE_CACHE_DIR}" == "" ]]; then
 fi
 
 #create a placeholder file on geoserver data dir and then use it to check whether the cluster volume are mounted successfully
+{{- if contains "hz-cluster-plugin" $.Values.geoserver.configmaps.settings.COMMUNITY_EXTENSIONS }}
+if [[ ! -d ${GEOSERVER_DATA_DIR}/logs/logging ]]; then
+    mkdir -p ${GEOSERVER_DATA_DIR}/logs/logging
+    status=$((${status} + $?))
+fi
+
+if [[ ! -f ${GEOSERVER_DATA_DIR}/logs/logging/geoserver_catalog_volume ]]; then
+    touch ${GEOSERVER_DATA_DIR}/logs/logging/geoserver_catalog_volume
+    status=$((${status} + $?))
+fi
+{{- end }}
+
+
 if [[ ! -d ${GEOSERVER_DATA_DIR}/cluster ]]; then
     mkdir ${GEOSERVER_DATA_DIR}/cluster
     status=$((${status} + $?))
 fi
 
-if [[ ! -f ${GEOSERVER_DATA_DIR}/cluster/config_data_volume ]]; then
-    touch ${GEOSERVER_DATA_DIR}/cluster/config_data_volume
+if [[ ! -f ${GEOSERVER_DATA_DIR}/cluster/geoserver_catalog_volume ]]; then
+    touch ${GEOSERVER_DATA_DIR}/cluster/geoserver_catalog_volume
     status=$((${status} + $?))
 fi
 
@@ -44,8 +57,8 @@ if [[ ! -d ${GEOSERVER_DATA_DIR}/monitoring ]]; then
     status=$((${status} + $?))
 fi
 
-if [[ ! -f ${GEOSERVER_DATA_DIR}/monitoring/config_data_volume ]]; then
-    touch ${GEOSERVER_DATA_DIR}/monitoring/config_data_volume
+if [[ ! -f ${GEOSERVER_DATA_DIR}/monitoring/geoserver_catalog_volume ]]; then
+    touch ${GEOSERVER_DATA_DIR}/monitoring/geoserver_catalog_volume
     status=$((${status} + $?))
 fi
 
@@ -54,8 +67,8 @@ if [[ ! -d ${GEOSERVER_DATA_DIR}/www/server ]]; then
     status=$((${status} + $?))
 fi
 
-if [[ ! -f ${GEOSERVER_DATA_DIR}/www/server/config_data_volume ]]; then
-    touch ${GEOSERVER_DATA_DIR}/www/server/config_data_volume
+if [[ ! -f ${GEOSERVER_DATA_DIR}/www/server/geoserver_catalog_volume ]]; then
+    touch ${GEOSERVER_DATA_DIR}/www/server/geoserver_catalog_volume
     status=$((${status} + $?))
 fi
 
@@ -66,8 +79,8 @@ if [[ "${GEOWEBCACHE_CACHE_DIR}" == "${GEOSERVER_DATA_DIR}/"* ]]; then
         status=$((${status} + $?))
     fi
 
-    if [[ ! -f ${GEOWEBCACHE_CACHE_DIR}/config_data_volume ]]; then
-        touch ${GEOWEBCACHE_CACHE_DIR}/config_data_volume
+    if [[ ! -f ${GEOWEBCACHE_CACHE_DIR}/geoserver_catalog_volume ]]; then
+        touch ${GEOWEBCACHE_CACHE_DIR}/geoserver_catalog_volume
         status=$((${status} + $?))
     fi
 
