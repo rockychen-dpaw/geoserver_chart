@@ -8,28 +8,18 @@ metadata:
 binaryData:
   geoserver_startup: >- 
 {{ include "geoserver.geoserver_startup" . | b64enc | indent 4 }}
-  setup_index_page: >- 
-{{ include "geoserver.setup_index_page" . | b64enc | indent 4 }}
-  {{- if ($.Values.geoserver.clustering | default false) }}
-  init_geoserver: >- 
-{{ include "geocluster.init_geoserver" . | b64enc | indent 4 }}
-  start_geoserver: >- 
-{{ include "geocluster.start_geoserver" . | b64enc | indent 4 }}
   geoserver_liveness: >- 
-{{ include "geocluster.geoserver_liveness" . | b64enc | indent 4 }}
-  set_geoclusterrole: >- 
-{{ include "geocluster.set_role" . | b64enc | indent 4 }}
-  geocluster_can_restart: >- 
-{{ include "geocluster.can_restart" . | b64enc | indent 4 }}
-  geocluster_restart: >- 
-{{ include "geocluster.restart" . | b64enc | indent 4 }}
-  {{- else }}
+{{ include "geoserver.geoserver_liveness" . | b64enc | indent 4 }}
   init_geoserver: >- 
 {{ include "geoserver.init_geoserver" . | b64enc | indent 4 }}
   start_geoserver: >- 
 {{ include "geoserver.start_geoserver" . | b64enc | indent 4 }}
-  geoserver_liveness: >- 
-{{ include "geoserver.geoserver_liveness" . | b64enc | indent 4 }}
-  {{- end }}
-
+  set_geoserverrole: >- 
+{{ include "geoserver.set_role" . | b64enc | indent 4 }}
+  geoserver_can_restart: >- 
+{{ include "geoserver.can_restart" . | b64enc | indent 4 }}
+  geoserver_restart: >- 
+{{ include "geoserver.restart" . | b64enc | indent 4 }}
+  setup_index_page: >- 
+{{ include "geoserver.setup_index_page" . | b64enc | indent 4 }}
 {{- end }}

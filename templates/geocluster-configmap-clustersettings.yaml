@@ -6,7 +6,7 @@ metadata:
   annotations:
     field.cattle.io/description: "geoserver cluster settings"
 data:
-  {{- if contains "jms-cluster-plugin" $.Values.geoserver.configmaps.settings.COMMUNITY_EXTENSIONS }}
+  {{- if and $.Values.geoserver.configmaps $.Values.geoserver.configmaps.settings (contains "jms-cluster-plugin" $.Values.geoserver.configmaps.settings.COMMUNITY_EXTENSIONS) }}
   CLUSTERING: "true"
   CLUSTER_DURABILITY: "false"
     {{- if $.Values.geoserver.brokerUrl }}

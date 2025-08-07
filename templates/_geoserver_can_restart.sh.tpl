@@ -1,4 +1,4 @@
-{{- define "geocluster.can_restart" }}#!/bin/bash
+{{- define "geoserver.can_restart" }}#!/bin/bash
 {{- $log_levels := dict "DISABLE" 0 "ERROR" 100 "WARNING" 200 "INFO" 300 "DEBUG" 400 }}
 {{- $log_levelname := upper ($.Values.geoserver.livenesslog | default "DISABLE") }}
 {{- if not (hasKey $log_levels $log_levelname) }}

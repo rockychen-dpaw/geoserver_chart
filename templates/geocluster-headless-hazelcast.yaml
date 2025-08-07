@@ -1,5 +1,5 @@
 #create a headless service for geocluster admin
-{{- if and $.Values.geoserver ($.Values.geoserver.clustering | default false) (contains "hz-cluster-plugin" $.Values.geoserver.configmaps.settings.COMMUNITY_EXTENSIONS) }}
+{{- if and $.Values.geoserver ($.Values.geoserver.clustering | default false) $.Values.geoserver.configmaps $.Values.geoserver.configmaps.settings (contains "hz-cluster-plugin" $.Values.geoserver.configmaps.settings.COMMUNITY_EXTENSIONS) }}
 apiVersion: v1
 kind: Service
 metadata:

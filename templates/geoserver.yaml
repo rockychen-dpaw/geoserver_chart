@@ -132,11 +132,11 @@ spec:
               command:
                 - /geoserver/bin/geoserver_startup
           livenessProbe:
-            failureThreshold: {{ $livenessProbe.failureThreshold | default 2 }}
-            successThreshold: {{ $livenessProbe.successThreshold | default 1 }}
-            initialDelaySeconds: {{ $livenessProbe.initialDelaySeconds | default 1 }}
-            timeoutSeconds: {{ $livenessProbe.timeoutSeconds | default 1 }}
-            periodSeconds: {{ $livenessProbe.periodSeconds | default 2 }}
+            failureThreshold: 1
+            successThreshold: 1
+            initialDelaySeconds: {{ $livenessProbe.initialDelaySeconds | default 10 }}
+            timeoutSeconds: {{ ceil (addf ($.Values.geoserver.liveCheckTimeout | default 0.5) 1) | int}}
+            periodSeconds: {{ $livenessProbe.periodSeconds | default 10 }}
             exec:
               command:
                 - /geoserver/bin/geoserver_liveness
