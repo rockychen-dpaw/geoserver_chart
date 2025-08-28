@@ -28,7 +28,11 @@ fi
 
 #set geoserver starttime
 if [[ $status -eq 0 ]]; then
-    #geoserver is ready to use
+   #geoserver is ready and send a getcapabilities request to geoserver to cache some data advance
+   nohup wget --user=${GEOSERVER_ADMIN_USER} --password=${GEOSERVER_ADMIN_PASSWORD} "http://127.0.0.1:8080/geoserver/ows?service=WFS&version=2.0.0&request=GetCapabilities" -o /dev/null -O /dev/null  > /dev/null 2>/dev/null &
+   nohup wget --user=${GEOSERVER_ADMIN_USER} --password=${GEOSERVER_ADMIN_PASSWORD} "http://127.0.0.1:8080/geoserver/ows?service=WCS&version=2.0.1&request=GetCapabilities" -o /dev/null -O /dev/null  > /dev/null 2>/dev/null &
+   nohup wget --user=${GEOSERVER_ADMIN_USER} --password=${GEOSERVER_ADMIN_PASSWORD} "http://127.0.0.1:8080/geoserver/ows?service=WMS&version=1.3.0&request=GetCapabilities" -o /dev/null -O /dev/null  > /dev/null 2>/dev/null &
+   nohup wget --user=${GEOSERVER_ADMIN_USER} --password=${GEOSERVER_ADMIN_PASSWORD} "http://127.0.0.1:8080/geoserver/gwc/service/wmts?service=WMTS&acceptVersions=1.0.0&request=GetCapabilities" -o /dev/null -O /dev/null > /dev/null 2>/dev/null &
 
     #set geoserver next restart time
     {{- if and (get $.Values.geoserver "restartPolicy") (get $.Values.geoserver.restartPolicy "restartSchedule") }}
@@ -232,6 +236,8 @@ fi
 
 {{- end }}
 sed -i -e "s/<span id=\"heartbeat\">[^<]*<\/span>/<span id=\"heartbeat\">${now}<\/span>/" -e "s/<span id=\"heartbeat_status\">[^<]*<\/span>/<span id=\"heartbeat_status\">${pingstatus}<\/span>/" -e "s/<span id=\"heartbeat_processingtime\">[^<]*<\/span>/<span id=\"heartbeat_processingtime\">${pingtime}<\/span>/" ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html
+
+
 exit $status
 {{- end }}
 

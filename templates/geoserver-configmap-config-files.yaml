@@ -12,13 +12,17 @@ binaryData:
   slave.cluster.properties: >- 
 {{ include "geoserver.slave.cluster.properties" . | b64enc | indent 4 }}
   broker.xml: >- 
-{{ include "geocluster.broker.xml" . | b64enc | indent 4 }}
+{{ $.Files.Get "static/geocluster_broker.xml" | b64enc | indent 4 }}
 {{- end }}
 {{- if and $.Values.geoserver ($.Values.geoserver.clustering | default false) $.Values.geoserver.configmaps $.Values.geoserver.configmaps.settings (contains "hz-cluster-plugin" $.Values.geoserver.configmaps.settings.COMMUNITY_EXTENSIONS) }}
   hazelcast.xml: >- 
 {{ include "geocluster.hazelcast.xml" . | b64enc | indent 4 }}
   hazelcast_cluster.properties: >- 
-{{ include "geocluster.hazelcast_cluster.properties" . | b64enc | indent 4 }}
+{{ $.Files.Get "conf/geoserver/default/cluster/hazelcast_cluster.properties" | b64enc | indent 4 }}
+{{- end }}
+{{- if and $.Values.geoserver.configmaps $.Values.geoserver.configmaps.settings (contains "jdbcconfig-plugin" $.Values.geoserver.configmaps.settings.COMMUNITY_EXTENSIONS) }}
+  jdbcconfig.properties: >- 
+{{ $.Files.Get "conf/geoserver/default/jdbcconfig/jdbcconfig.properties" | b64enc | indent 4 }}
 {{- end }}
   index.html: >- 
 {{ $.Files.Get "static/geoserverindex.html" | b64enc | indent 4 }}
@@ -34,4 +38,8 @@ binaryData:
 {{ $.Files.Get "static/serverinfo.html" | b64enc | indent 4 }}
   starthistory.html: >- 
 {{ $.Files.Get "static/geoserver_restarthistory.html" | b64enc | indent 4 }}
+  geowebcache-diskquota-jdbc.xml: >- 
+{{ $.Files.Get "static/geowebcache-diskquota-jdbc.xml" | b64enc | indent 4 }}
+  geowebcache-diskquota.xml: >- 
+{{ $.Files.Get "static/geowebcache-diskquota.xml" | b64enc | indent 4 }}
 {{- end }}

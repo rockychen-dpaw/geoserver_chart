@@ -89,7 +89,7 @@ spec:
       protocol: TCP
       targetPort: 8080
   selector:
-    workload.user.cattle.io/workloadselector: apps.deployment-{{ $.Release.Namespace}}-{{ $.Release.Name }}-geoclusteradmin
+    workload.user.cattle.io/workloadselector: apps.statefulset-{{ $.Release.Namespace}}-{{ $.Release.Name }}-geoclusteradmin
   sessionAffinity: None
   type: ClusterIP
 {{- end }}

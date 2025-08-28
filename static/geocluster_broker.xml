@@ -1,4 +1,4 @@
-{{- define "geocluster.broker.xml" }}<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <beans
     xmlns="http://www.springframework.org/schema/beans"
     xmlns:amq="http://activemq.apache.org/schema/core"
@@ -22,4 +22,3 @@
     </transportConnectors>
   </broker>
 </beans>
-{{- end}}

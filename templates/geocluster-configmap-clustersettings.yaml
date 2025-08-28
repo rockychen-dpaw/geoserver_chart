@@ -17,6 +17,5 @@ data:
   EMBEDDED_BROKER: "disabled"
   {{- else }}
   CLUSTERING: "false"
-  GEOSERVER_LOG_DIR: "/geoserver/data/logs/logging"
   {{- end }}
 {{- end }}

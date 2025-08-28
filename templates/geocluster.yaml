@@ -52,6 +52,8 @@ spec:
             - name: {{ $key }}
               value: {{ $value | quote }}
             {{- end }}
+            - name: GEOSERVER_LOG_DIR
+              value: "/geoserver/data/logs/logging"
           envFrom:
             {{- range $name,$data := $.Values.geoserver.secrets | default dict }}
             - secretRef:
@@ -109,6 +111,15 @@ spec:
             {{- end }}  
             {{- end }}
             {{- end }}
+            {{- range $name,$config := $.Values.geoserver.existingVolumes }}
+            {{- range $i,$mount := $config.mounts }}
+            - mountPath: {{ $mount.mountPath }}
+              name: {{ $name }}
+              {{- if hasKey $mount "subPath" }}
+              subPath: {{ $mount.subPath }}
+              {{- end }}
+            {{- end }}  
+            {{- end }}
       containers:
         - name: {{ $.Release.Name }}-geocluster
           image: {{ $.Values.geoserver.image }}
@@ -127,6 +138,8 @@ spec:
               value: {{ $.Values.geoserver.user | default "geoserver" }}
             - name: GROUP_NAME
               value: {{ $.Values.geoserver.group | default "geoserver" }}
+            - name: GEOSERVER_LOG_DIR
+              value: "/geoserver/data/logs/logging"
             - name: RELEASE_TIME
             {{- if eq ($.Values.geoserver.releaseTime | default "")  "" }}
               value: {{ now | date "2006-01-02T15:04:05" | quote }}
@@ -234,6 +247,15 @@ spec:
               {{- end }}
             {{- end }}  
             {{- end }}
+            {{- range $name,$config := $.Values.geoserver.existingVolumes }}
+            {{- range $i,$mount := $config.mounts }}
+            - mountPath: {{ $mount.mountPath }}
+              name: {{ $name }}
+              {{- if hasKey $mount "subPath" }}
+              subPath: {{ $mount.subPath }}
+              {{- end }}
+            {{- end }}  
+            {{- end }}
       dnsPolicy: ClusterFirst
       restartPolicy: Always
       schedulerName: default-scheduler
@@ -288,6 +310,13 @@ spec:
       - name: {{ $name }}
         persistentVolumeClaim:
           claimName: {{ $.Release.Name }}-geoserver-{{ $name }}
+          readOnly: {{ $config.readOnly | default "false" }}
+      {{- end }}
+      {{- range $name,$config := $.Values.geoserver.existingVolumes | default dict }}
+      - name: {{ $name }}
+        persistentVolumeClaim:
+          claimName: {{ $config.claimName }}
+          readOnly: {{ $config.readOnly | default "false" }}
       {{- end }}
   volumeClaimTemplates:
     {{- range $name,$config := $.Values.geoserver.volumeClaimTemplates }}
@@ -312,27 +341,23 @@ spec:
 {{- if not $adminServerIsWorker }}
 ---
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: {{ $.Release.Name }}-geoclusteradmin
 spec:
-  progressDeadlineSeconds: 600
-  replicas: 1
-  revisionHistoryLimit: 10
   selector:
     matchLabels:
-      workload.user.cattle.io/workloadselector: apps.deployment-{{ $.Release.Namespace}}-{{ $.Release.Name }}-geoclusteradmin
+      workload.user.cattle.io/workloadselector: apps.statefulset-{{ $.Release.Namespace}}-{{ $.Release.Name }}-geoclusteradmin
       workload.user.cattle.io/geoclusterselector: apps.statefulset-{{ $.Release.Namespace}}-{{ $.Release.Name }}-geocluster
-  strategy:
-    rollingUpdate:
-      maxSurge: 25%
-      maxUnavailable: 25%
-    type: RollingUpdate
+  podManagementPolicy: OrderedReady
+  replicas: 1
+  revisionHistoryLimit: 10
+  serviceName: {{ $.Release.Name }}-geoclusteradmin-headless
   template:
     metadata:
       creationTimestamp: null
       labels:
-        workload.user.cattle.io/workloadselector: apps.deployment-{{ $.Release.Namespace}}-{{ $.Release.Name }}-geoclusteradmin
+        workload.user.cattle.io/workloadselector: apps.statefulset-{{ $.Release.Namespace}}-{{ $.Release.Name }}-geoclusteradmin
         workload.user.cattle.io/geoclusterselector: apps.statefulset-{{ $.Release.Namespace}}-{{ $.Release.Name }}-geocluster
     spec:
       initContainers:
@@ -346,6 +371,8 @@ spec:
             - name: {{ $key }}
               value: {{ $value | quote }}
             {{- end }}
+            - name: GEOSERVER_LOG_DIR
+              value: "/geoserver/data/logs/logging"
           envFrom:
             {{- range $name,$data := $.Values.geoserver.secrets | default dict }}
             - secretRef:
@@ -401,6 +428,15 @@ spec:
             {{- end }}  
             {{- end }}
             {{- end }}
+            {{- range $name,$config := $.Values.geoserver.existingVolumes }}
+            {{- range $i,$mount := $config.mounts }}
+            - mountPath: {{ $mount.mountPath }}
+              name: {{ $name }}
+              {{- if hasKey $mount "subPath" }}
+              subPath: {{ $mount.subPath }}
+              {{- end }}
+            {{- end }}  
+            {{- end }}
       containers:
         - name: {{ $.Release.Name }}-geoclusteradmin
           image: {{ $.Values.geoserver.image }}
@@ -419,6 +455,8 @@ spec:
               value: {{ $.Values.geoserver.user | default "geoserver" }}
             - name: GROUP_NAME
               value: {{ $.Values.geoserver.group | default "geoserver" }}
+            - name: GEOSERVER_LOG_DIR
+              value: "/geoserver/data/logs/logging"
             - name: RELEASE_TIME
             {{- if eq ($.Values.geoserver.adminReleaseTime | default "")  "" }}
               value: {{ now | date "2006-01-02T15:04:05" | quote }}
@@ -528,6 +566,24 @@ spec:
               {{- end }}
             {{- end }}  
             {{- end }}
+            {{- range $name,$config := $.Values.geoserver.existingVolumes }}
+            {{- range $i,$mount := $config.mounts }}
+            - mountPath: {{ $mount.mountPath }}
+              name: {{ $name }}
+              {{- if hasKey $mount "subPath" }}
+              subPath: {{ $mount.subPath }}
+              {{- end }}
+            {{- end }}  
+            {{- end }}
+            {{- range $name,$config := $.Values.geoserver.existingAdminVolumes }}
+            {{- range $i,$mount := $config.mounts }}
+            - mountPath: {{ $mount.mountPath }}
+              name: {{ $name }}
+              {{- if hasKey $mount "subPath" }}
+              subPath: {{ $mount.subPath }}
+              {{- end }}
+            {{- end }}  
+            {{- end }}
       dnsPolicy: ClusterFirst
       restartPolicy: Always
       schedulerName: default-scheduler
@@ -582,11 +638,25 @@ spec:
       - name: {{ $name }}
         persistentVolumeClaim:
           claimName: {{ $.Release.Name }}-geoserver-{{ $name }}
+          readOnly: {{ $config.readOnly | default "false" }}
       {{- end }}
       {{- range $name,$config := $.Values.geoserver.adminVolumes | default dict }}
       - name: {{ $name }}
         persistentVolumeClaim:
           claimName: {{ $.Release.Name }}-geoclusteradmin-{{ $name }}
+          readOnly: {{ $config.readOnly | default "false" }}
+      {{- end }}
+      {{- range $name,$config := $.Values.geoserver.existingVolumes | default dict }}
+      - name: {{ $name }}
+        persistentVolumeClaim:
+          claimName: {{ $config.claimName }}
+          readOnly: {{ $config.readOnly | default "false" }}
+      {{- end }}
+      {{- range $name,$config := $.Values.geoserver.existingAdminVolumes | default dict }}
+      - name: {{ $name }}
+        persistentVolumeClaim:
+          claimName: {{ $config.claimName }}
+          readOnly: {{ $config.readOnly | default "false" }}
       {{- end }}
 {{- end }}
 {{- end }}

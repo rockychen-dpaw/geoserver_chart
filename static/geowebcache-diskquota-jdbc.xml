@@ -1,0 +1,3 @@
+<gwcJdbcConfiguration>
+  <dialect>HSQL</dialect>
+</gwcJdbcConfiguration>

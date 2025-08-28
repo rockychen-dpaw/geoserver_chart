@@ -52,6 +52,16 @@ if [[ ! -f ${GEOSERVER_DATA_DIR}/cluster/geoserver_catalog_volume ]]; then
     touch ${GEOSERVER_DATA_DIR}/cluster/geoserver_catalog_volume
     status=$((${status} + $?))
 fi
+{{- else }}
+if [[ ! -d ${GEOSERVER_DATA_DIR}/logs/logging ]]; then
+    mkdir -p ${GEOSERVER_DATA_DIR}/logs/logging
+    status=$((${status} + $?))
+fi
+
+if [[ ! -f ${GEOSERVER_DATA_DIR}/logs/logging/geoserver_catalog_volume ]]; then
+    touch ${GEOSERVER_DATA_DIR}/logs/logging/geoserver_catalog_volume
+    status=$((${status} + $?))
+fi
 {{- end }}
 
 if [[ ! -d ${GEOSERVER_DATA_DIR}/monitoring ]]; then

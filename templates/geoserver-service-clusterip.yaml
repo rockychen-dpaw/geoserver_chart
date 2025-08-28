@@ -15,7 +15,7 @@ spec:
       protocol: TCP
       targetPort: 8080
   selector:
-    workload.user.cattle.io/workloadselector: apps.deployment-{{ $.Release.Namespace }}-{{ $.Release.Name }}-geoserver
+    workload.user.cattle.io/workloadselector: apps.statefulset-{{ $.Release.Namespace }}-{{ $.Release.Name }}-geoserver
   sessionAffinity: None
   type: ClusterIP
 {{- end }}
