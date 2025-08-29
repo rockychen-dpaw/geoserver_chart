@@ -49,12 +49,18 @@ fi
 
 echo "Try to remove the diskquota file ${GEOSERVER_DATA_DIR}/gwc/geowebcache-diskquota.xml if exists"
 rm -f ${GEOSERVER_DATA_DIR}/gwc/geowebcache-diskquota.xml
-status=$((${status} + $?))
+if [[ $? -ne 0 ]]; then
+  echo "Failed to remove the diskquota file ${GEOSERVER_DATA_DIR}/gwc/geowebcache-diskquota.xml if exists"
+  status=$((${status} + 1))
+fi
 
 echo "Try to remove the diskquota jdbc file ${GEOSERVER_DATA_DIR}/gwc/geowebcache-diskquota-jdbc.xml if exists"
 rm -f ${GEOSERVER_DATA_DIR}/gwc/geowebcache-diskquota-jdbc.xml
-status=$((${status} + $?))
-
+if [[ $? -ne 0 ]]; then
+  echo "Failed to remove the diskquota jdbc file ${GEOSERVER_DATA_DIR}/gwc/geowebcache-diskquota-jdbc.xml if exists"
+  status=$((${status} + 1))
+fi
+ 
 #remove the diskquota.lck
 while [[ -f ${GEOSERVER_DATA_DIR}/gwc/diskquota_page_store_hsql/diskquota.lck ]]; do
     echo "Try to delete the lock file ${GEOSERVER_DATA_DIR}/gwc/diskquota_page_store_hsql/diskquota.lck to release the lock"
@@ -69,23 +75,38 @@ done
 
 #setup index page
 /geoserver/bin/setup_index_page
-status=$((${status} + $?))
+if [[ $? -ne 0 ]]; then
+  echo "Failed to setup index page"
+  status=$((${status} + 1))
+fi
 
 cp ${GEOSERVER_HOME}/settings/serverinfo.html ${GEOSERVER_DATA_DIR}/www/server
-status=$((${status} + $?))
+if [[ $? -ne 0 ]]; then
+  echo "Failed to setup serverinfo page"
+  status=$((${status} + 1))
+fi
 
 if [[ ! -f "${GEOSERVER_DATA_DIR}/www/server/starthistory.html" ]]; then
     cp ${GEOSERVER_HOME}/settings/starthistory.html ${GEOSERVER_DATA_DIR}/www/server
-    status=$((${status} + $?))
+    if [[ $? -ne 0 ]]; then
+      echo "Failed to setup server start history page"
+      status=$((${status} + 1))
+    fi
 fi
 
 echo "$(date '+%s')" > /tmp/geoserver_starttime
-status=$((${status} + $?))
+if [[ $? -ne 0 ]]; then
+  echo "Failed to create geoserver starttime file '/tmp/geoserver_starttime'"
+  status=$((${status} + 1))
+fi
 
 echo "Copy extra config files"
 if [[ ! -d "${EXTRA_CONFIG_DIR}" ]];then
   mkdir -p "${EXTRA_CONFIG_DIR}"
-  status=$((${status} + $?))
+  if [[ $? -ne 0 ]]; then
+    echo "Failed to create extra config dir '${EXTRA_CONFIG_DIR}'"
+    status=$((${status} + 1))
+  fi
 fi
 
 
@@ -93,41 +114,67 @@ fi
   {{- if and $.Values.geoserver.configmaps $.Values.geoserver.configmaps.settings (contains "hz-cluster-plugin" $.Values.geoserver.configmaps.settings.COMMUNITY_EXTENSIONS) }}
   echo "Copy the hazelcast_cluster.properties to ${EXTRA_CONFIG_DIR}"
   cp -f ${GEOSERVER_HOME}/settings/hazelcast_cluster.properties ${EXTRA_CONFIG_DIR}/
-  status=$((${status} + $?))
+  if [[ $? -ne 0 ]]; then
+    echo "Failed to copy the hazelcast_cluster.properties to ${EXTRA_CONFIG_DIR}"
+    status=$((${status} + 1))
+  fi
+
   echo "Copy the hazelcast.xml to ${EXTRA_CONFIG_DIR}"
   cp -f ${GEOSERVER_HOME}/settings/hazelcast.xml ${EXTRA_CONFIG_DIR}/
-  status=$((${status} + $?))
+  if [[ $? -ne 0 ]]; then
+    echo "Failed to copy the hazelcast.xml to ${EXTRA_CONFIG_DIR}"
+    status=$((${status} + 1))
+  fi
   {{- end }}
 
   {{- if and $.Values.geoserver.configmaps $.Values.geoserver.configmaps.settings (contains "jms-cluster-plugin" $.Values.geoserver.configmaps.settings.COMMUNITY_EXTENSIONS) }}
 #jms cluster is used
 cp -f ${GEOSERVER_HOME}/settings/broker.xml ${EXTRA_CONFIG_DIR}/broker.xml
-status=$((${status} + $?))
+if [[ $? -ne 0 ]]; then
+  echo "Failed to copy the broker.xml to ${EXTRA_CONFIG_DIR}"
+  status=$((${status} + 1))
+fi
 
 if [[ "${GEOSERVER_ROLE}" == "slave" ]]; then
   echo "Copy the cluster.properties for geocluster slave to ${EXTRA_CONFIG_DIR}"
   cp -f ${GEOSERVER_HOME}/settings/slave.cluster.properties ${EXTRA_CONFIG_DIR}/cluster.properties
+  if [[ $? -ne 0 ]]; then
+    echo "Failed to copy the slave.cluster.properties to ${EXTRA_CONFIG_DIR}/cluster.properties"
+    status=$((${status} + 1))
+  fi
 else
   echo "Copy the cluster.properties for geocluster admin to ${EXTRA_CONFIG_DIR}"
   cp -f ${GEOSERVER_HOME}/settings/admin.cluster.properties ${EXTRA_CONFIG_DIR}/cluster.properties
+  if [[ $? -ne 0 ]]; then
+    echo "Failed to copy the admin.cluster.properties to ${EXTRA_CONFIG_DIR}/cluster.properties"
+    status=$((${status} + 1))
+  fi
 fi
-status=$((${status} + $?))
   {{- end }}
 
 {{- end }}
 
 echo "Copy geowebcache-diskquota.xml to ${EXTRA_CONFIG_DIR}"
 cp -f ${GEOSERVER_HOME}/settings/geowebcache-diskquota.xml ${EXTRA_CONFIG_DIR}/
-status=$((${status} + $?))
+if [[ $? -ne 0 ]]; then
+  echo "Failed to copy geowebcache-diskquota.xml to ${EXTRA_CONFIG_DIR}"
+  status=$((${status} + 1))
+fi
 
 echo "Copy geowebcache-diskquota-jdbc.xml to ${EXTRA_CONFIG_DIR}"
 cp -f ${GEOSERVER_HOME}/settings/geowebcache-diskquota-jdbc.xml ${EXTRA_CONFIG_DIR}/
-status=$((${status} + $?))
+if [[ $? -ne 0 ]]; then
+  echo "Failed to copy geowebcache-diskquota-jdbc.xml to ${EXTRA_CONFIG_DIR}"
+  status=$((${status} + 1))
+fi
 
 {{- if gt (len ($.Values.geoserver.customsettings | default list)) 0  }}
 echo "Copy the custom settings to geoserver data dir"
 cp -rfL /geoserver/customsettings/* ${GEOSERVER_DATA_DIR}
-status=$((${status} + $?))
+if [[ $? -ne 0 ]]; then
+  echo "Failed to copy the custom settings to geoserver data dir"
+  status=$((${status} + 1))
+fi
 {{- end }}
 
 if [[ ${status} -ne 0 ]]; then
