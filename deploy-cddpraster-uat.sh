@@ -7,4 +7,4 @@ else
     exit 1
 fi
 
-./deploy.sh  upgrade --values values-geocluster-cddpraster-uat.yaml -n kmi cddpraster-uat ./
+./deploy.sh  upgrade --values values-geoserver-cddpraster-uat.yaml -n kmi cddpraster-uat ./
