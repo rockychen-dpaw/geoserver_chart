@@ -177,6 +177,9 @@ if [[ $? -ne 0 ]]; then
 fi
 {{- end }}
 
+echo "Remove the geoserver readytime if it exists."
+rm -f ${GEOSERVER_DATA_DIR}/www/server/readytime
+
 if [[ ${status} -ne 0 ]]; then
     echo "Failed to initialize geoserver"
     exit ${status}

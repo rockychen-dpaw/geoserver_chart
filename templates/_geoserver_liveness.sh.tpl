@@ -28,7 +28,7 @@ fi
 {{- end}}
 
 starttime=$(date '+%s.%N')
-wget --tries=1 -nv --timeout={{$.Values.geoserver.liveCheckTimeout | default 0.5 }} http://127.0.0.1:8080/geoserver/www/server/starttime -o /dev/null -O /dev/null
+wget --tries=1 -nv --timeout={{$.Values.geoserver.liveCheckTimeout | default 0.5 }} http://127.0.0.1:8080/geoserver/www/server/readytime -o /dev/null -O /dev/null
 status=$?
 endtime=$(date '+%s.%N')
 pingtime=$(perl -e "print (${endtime} - ${starttime}) * 1000")

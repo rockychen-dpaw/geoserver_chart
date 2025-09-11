@@ -138,7 +138,7 @@ spec:
             failureThreshold: {{ $startupProbe.failureThreshold | default 30 }}
             successThreshold: {{ $startupProbe.successThreshold | default 1 }}
             initialDelaySeconds: {{ $startupProbe.initialDelaySeconds | default 0 }}
-            timeoutSeconds: {{ $startupProbe.timeoutSeconds | default 1 }}
+            timeoutSeconds: {{ $startupProbe.timeoutSeconds | default 3 }}
             periodSeconds: {{ $startupProbe.periodSeconds | default 1 }}
             exec:
               command:

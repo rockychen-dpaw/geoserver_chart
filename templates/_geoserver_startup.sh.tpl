@@ -11,6 +11,7 @@ LIVENESSLOG_EXPIREDAYS={{$.Values.geoserver.livenesslogExpiredays | default 30}}
 {{- end }}
 {{- $log_level := (get $log_levels $log_levelname) | int }}
 
+processid=$(date +%H:%M:%S.%N)
 source /geoserver/bin/set_geoserverrole
 
 {{ $.Files.Get "static/manage_livenesslog.sh"  }}
@@ -139,7 +140,7 @@ if [[ $status -eq 0 ]]; then
       echo ${nextRestartSeconds} > ${GEOSERVER_DATA_DIR}/www/server/nextrestarttime
       touch ${GEOSERVER_DATA_DIR}/www/server/restartenabled
       {{- if ge $log_level ((get $log_levels "INFO") | int) }}
-      echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Startup : next scheduled restart time is ${nextRestartTime}" >> ${livenesslogfile}
+      echo "$(date '+%Y-%m-%d %H:%M:%S.%N')-${processid} Startup : next scheduled restart time is ${nextRestartTime}" >> ${livenesslogfile}
       {{- end }}
     else
       nextRestartTime="Disabled"
@@ -147,7 +148,7 @@ if [[ $status -eq 0 ]]; then
       echo ${nextRestartTime} > ${GEOSERVER_DATA_DIR}/www/server/nextrestarttime
       rm -rf ${GEOSERVER_DATA_DIR}/www/server/restartenabled
       {{- if ge $log_level ((get $log_levels "INFO") | int) }}
-      echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Startup : next scheduled restart time is N/A" >> ${livenesslogfile}
+      echo "$(date '+%Y-%m-%d %H:%M:%S.%N')-${processid} Startup : next scheduled restart time is N/A" >> ${livenesslogfile}
       {{- end }}
     fi
     {{- else }}
@@ -156,7 +157,7 @@ if [[ $status -eq 0 ]]; then
     echo ${nextRestartTime} > ${GEOSERVER_DATA_DIR}/www/server/nextrestarttime
     rm -rf ${GEOSERVER_DATA_DIR}/www/server/restartenabled
     {{- if ge $log_level ((get $log_levels "INFO") | int) }}
-    echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Startup : next scheduled restart time is N/A" >> ${livenesslogfile}
+    echo "$(date '+%Y-%m-%d %H:%M:%S.%N')-${processid} Startup : next scheduled restart time is N/A" >> ${livenesslogfile}
     {{- end }}
 
     {{- end }} 
@@ -194,8 +195,9 @@ if [[ $status -eq 0 ]]; then
     fi
     sed -i -e "s/<span id=\"tomcat_version\">[^<]*<\/span>/<span id=\"tomcat_version\">${TOMCAT_VERSION}<\/span>/" -e "s/<span id=\"starttime\">[^<]*<\/span>/<span id=\"starttime\">${starttime}<\/span>/" -e "s/<span id=\"readytime\">[^<]*<\/span>/<span id=\"readytime\">${readytime}<\/span>/" -e "s/<span id=\"startingtime\">[^<]*<\/span>/<span id=\"startingtime\">${startingtime}<\/span>/" -e "s/<span id=\"initialmemory\">[^<]*<\/span>/<span id=\"initialmemory\">${INITIAL_MEMORY}<\/span>/" -e "s/<span id=\"maxmemory\">[^<]*<\/span>/<span id=\"maxmemory\">${MAXIMUM_MEMORY}<\/span>/" ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html
 
-    echo ${readyseconds} > ${GEOSERVER_DATA_DIR}/www/server/starttime
-
+    echo ${readyseconds} > ${GEOSERVER_DATA_DIR}/www/server/readytime
+    #sometimes, kubernete will run the successful startup probe multitimes. that will cause multiple startup recoreds are recorded.
+    #this logic will guarantee that the restart record will only be added by the first successful startup probe
     #write the start history
     sed -i "s/<ol>/<ol>\n<li><label>Start At:<\/label><span>${starttime}<\/span><label>Ready At:<\/label><span>${readytime}<\/span><label>Scheduled Restart At:<\/label><span>${nextRestartTime}<\/span><label>Starting Time:<\/label><span>${startingtime}<\/span><\/span><\/li>/g" ${GEOSERVER_DATA_DIR}/www/server/starthistory.html
     count=$(cat ${GEOSERVER_DATA_DIR}/www/server/starthistory.html | grep "<li>" | wc -l)
@@ -221,13 +223,13 @@ fi
 resourceusage=""
   {{- end }}
 if [[ ${status} -gt 0 ]]; then
-  echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Startup : Geoserver is not ready. ${resourceusage} , ping: ${pingstatus} , pingtime: ${pingtime}" >> ${livenesslogfile}
+  echo "$(date '+%Y-%m-%d %H:%M:%S.%N')-${processid} Startup : Geoserver is not ready. ${resourceusage} , ping: ${pingstatus} , pingtime: ${pingtime}" >> ${livenesslogfile}
 else
   {{- if gt ($.Values.geoserver.memoryMonitorInterval | default 0 | int) 0  }}
   echo ${geoserverpid} > /tmp/geoserverpid
   echo "$(date -d '+{{- $.Values.geoserver.memoryMonitorInterval}} seconds' '+%s')" > /tmp/memorymonitornexttime
   {{- end }}
-  echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Startup : Geoserver is ready. ${resourceusage} , ping: ${pingstatus} , pingtime: ${pingtime}" >> ${livenesslogfile}
+  echo "$(date '+%Y-%m-%d %H:%M:%S.%N')-${processid} Startup : Geoserver is ready. ${resourceusage} , ping: ${pingstatus} , pingtime: ${pingtime}" >> ${livenesslogfile}
 fi
 
 if [[ "${resourceusage}" != "" ]]; then

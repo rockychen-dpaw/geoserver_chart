@@ -125,6 +125,14 @@ spec:
           {{- end }}
           schedulerName: default-scheduler
           terminationGracePeriodSeconds: 30
+          {{ if hasKey $.Values.geoserver "tolerations" }}
+          tolerations:
+{{ $.Values.geoserver.tolerations | toYaml | indent 12 }}
+          {{- end }}
+          {{- if $.Values.geoserver.nodeSelector }}
+          nodeSelector:
+{{ $.Values.geoserver.nodeSelector | toYaml | indent 12 }}
+          {{- end }}
           volumes:
             - name: report-data
               persistentVolumeClaim:
