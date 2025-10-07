@@ -1,4 +1,5 @@
 values*.yaml
 values*.yaml.bak
+kubectl-*.yaml
 *.swp
 

@@ -20,10 +20,6 @@ binaryData:
   hazelcast_cluster.properties: >- 
 {{ $.Files.Get "conf/geoserver/default/cluster/hazelcast_cluster.properties" | b64enc | indent 4 }}
 {{- end }}
-{{- if and $.Values.geoserver.configmaps $.Values.geoserver.configmaps.settings (contains "jdbcconfig-plugin" $.Values.geoserver.configmaps.settings.COMMUNITY_EXTENSIONS) }}
-  jdbcconfig.properties: >- 
-{{ $.Files.Get "conf/geoserver/default/jdbcconfig/jdbcconfig.properties" | b64enc | indent 4 }}
-{{- end }}
   index.html: >- 
 {{ $.Files.Get "static/geoserverindex.html" | b64enc | indent 4 }}
   index_without_reports.html: >- 
