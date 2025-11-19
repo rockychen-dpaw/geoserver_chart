@@ -113,6 +113,15 @@ spec:
               volumeMounts:
                 - name: report-data
                   mountPath: /app/reports
+                {{- range $name,$config := $.Values.geoserverHealthcheck.existingVolumes }}
+                {{- range $i,$mount := $config.mounts }}
+                - mountPath: {{ $mount.mountPath }}
+                  name: {{ $name }}
+                  {{- if hasKey $mount "subPath" }}
+                  subPath: {{ $mount.subPath }}
+                  {{- end }}
+                {{- end }}  
+                {{- end }}
           dnsPolicy: ClusterFirst
           {{- if hasKey $.Values.geoserverHealthcheck "imagepull" }}
           imagePullSecrets:
@@ -137,6 +146,16 @@ spec:
             - name: report-data
               persistentVolumeClaim:
                 claimName: {{ $.Release.Name }}-geoserver-healthcheck-report-data
+            {{- range $name,$config := $.Values.geoserverHealthcheck.existingVolumes | default dict }}
+            - name: {{ $name }}
+              persistentVolumeClaim:
+                {{- if hasKey $config "relativeClaimName" }}
+                claimName: {{ $.Release.Name}}-{{ $config.relativeClaimName }}
+                {{- else }}
+                claimName: {{ $config.claimName }}
+                {{- end }}
+                readOnly: {{ $config.readOnly | default "false" }}
+            {{- end }}
 
   schedule: {{ $.Values.geoserverHealthcheck.schedule }}
   successfulJobsHistoryLimit: {{ $.Values.geoserverHealthcheck.successfulJobsHistoryLimit | default 3 }}
