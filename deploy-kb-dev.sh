@@ -7,4 +7,4 @@ else
     exit 1
 fi
 
-./deploy.sh  upgrade --values values-geocluster-kb-dev.yaml -n kmi kb-dev ./
+./deploy.sh upgrade --values values-geocluster-kb-dev.yaml -n kmi kb-dev ./
