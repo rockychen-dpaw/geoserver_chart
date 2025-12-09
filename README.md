@@ -1,49 +1,55 @@
 # Geoserver cluster Helm chart (DBCA)
 
 This is a custom Helm chart to deploy Geoserver in a clustered arrangement on a Kubernetes cluster.
+It consists of the Helm chart, shell scripts to deploy clusters, encrypted values configuration values,
+and customised HTML templates deployed with each cluster to assist with service health monitoring.
 
-## Geoserver Values Yaml file reference
+## Geoserver values YAML file reference
+
 ### Variables
-- activemqJmxUser: &activemqJmxUser "***" : Deprecated
-- activemqJmxPassword: &activemqJmxPassword "***"  : Deprecated
-- activemqWebUser: &activemqWebUser "***"  : Deprecated
-- activemqWebPassword: &activemqWebPassword "***" : Deprecated
+
+- activemqJmxUser: &activemqJmxUser "\*\*\*" : Deprecated
+- activemqJmxPassword: &activemqJmxPassword "\*\*\*" : Deprecated
+- activemqWebUser: &activemqWebUser "\*\*\*" : Deprecated
+- activemqWebPassword: &activemqWebPassword "\*\*\*" : Deprecated
 - messagequeueReleaseTime: &messagequeueReleaseTime "2025-04-08T13:00:00" : Deprecated
-- geoserverAdminPassword: &geoserverAdminPassword "***" : password for geoserver admin 
-- geoserverAdminUser: &geoserverAdminUser "***" : geoserver admin user
-- geoserverCatalogDBHost: &geoserverCatalogDBHost "***" : jdbc catalog database host
-- geoserverCatalogDBPort: &geoserverCatalogDBPort 5432  : jdbc catalog database port
-- geoserverCatalogDBName: &geoserverCatalogDBName "***" : jdbc catalog database name
-- geoserverCatalogDBUser: &geoserverCatalogDBUser "***"  : jdbc catalog database user
-- geoserverCatalogDBPassword: &geoserverCatalogDBPassword "***" : jdbc catalog database password
-- ghcrImagePullUser: &ghcrImagePullUser "***" : Image pull user
-- ghcrImagePullPassword: &ghcrImagePullPassword "***" : Image pull password
+- geoserverAdminPassword: &geoserverAdminPassword "\*\*\*" : password for geoserver admin
+- geoserverAdminUser: &geoserverAdminUser "\*\*\*" : geoserver admin user
+- geoserverCatalogDBHost: &geoserverCatalogDBHost "\*\*\*" : jdbc catalog database host
+- geoserverCatalogDBPort: &geoserverCatalogDBPort 5432 : jdbc catalog database port
+- geoserverCatalogDBName: &geoserverCatalogDBName "\*\*\*" : jdbc catalog database name
+- geoserverCatalogDBUser: &geoserverCatalogDBUser "\*\*\*" : jdbc catalog database user
+- geoserverCatalogDBPassword: &geoserverCatalogDBPassword "\*\*\*" : jdbc catalog database password
+- ghcrImagePullUser: &ghcrImagePullUser "\*\*\*" : Image pull user
+- ghcrImagePullPassword: &ghcrImagePullPassword "\*\*\*" : Image pull password
 - geoserverReleaseTime: &geoserverReleaseTime "2025-11-21T12:00:00" : if changed, will always redeploy geoserver cluster workload
 - adminGeoserverReleaseTime: &adminGeoserverReleaseTime "2025-11-21T12:00:00" : if changed, will always redploy geoserver cluster admin workload, only used if clustering is True and adminServerIsWorker if False
-- geoserverHealthcheckReleaseTime: &geoserverHealthcheckReleaseTime "2025-10-20T10:00:00": if changed, will always redeploy geoserver healthcheck 
+- geoserverHealthcheckReleaseTime: &geoserverHealthcheckReleaseTime "2025-10-20T10:00:00": if changed, will always redeploy geoserver healthcheck
 
-### messagequeue 
-The workload messagequeue is deprecated by suffix messagequeue with "_skipped"
+### MessageQueue
 
-### geoserver
+The workload messagequeue is deprecated by suffix messagequeue with "\_skipped"
+
+### Geoserver
+
 ```
  image: The image used by geoserver workload
  clustering: Deploy geoserver as geocluster if True; otherwise deploy a single geoserver
- adminServerIsWorker: The geocluster admin server is also a worker if True; otherwise, geocluster admin server is a dedicate admin server. Only useful if clustering is True. 
- userid: The user id used by geosever, please don't change
- groupid: The user group id used by geoserver, please don't change
+ adminServerIsWorker: The geocluster admin server is also a worker if True; otherwise, geocluster admin server is a dedicate admin server. Only useful if clustering is True.
+ userid: The user id used by geoserver, DO NOT CHANGE
+ groupid: The user group id used by geoserver, DO NOT CHANGE
  domain: the domain where ther user can get map services from.
  adminDomain: the domain to access geocluster admin server
  slaveDomain: the domain to access individual geocluster slave server
  otherDomains: list of other domains the user can get map services from
  port: the listening port of the geoserver
- replicas: the number of geoservers in the geocluster. please always redploy geocluster with helm after replicas is changed.
+ replicas: the number of geoservers in the geocluster. Always redploy geocluster with Helm after replicas value is changed.
  maxstarttimes: the number of restart items will be kept in the log file
- livenesslog: liveness log level.valid value is  DEBUG, INFO ,DISABLE
+ livenesslog: liveness log level. Valid values: DEBUG, INFO, DISABLE
  livenesslogExpiredays: liveness log file expire days
- memoryMonitorInterval: the memory montior interval. in seconds,
+ memoryMonitorInterval: the memory monitor interval in seconds.
  liveCheckTimeout: The timeout used to check whether geoserver is live.
- restartPolicy: geoserver reatart policy
+ restartPolicy: geoserver restart policy
     restartPeriods: Configure the time frame to restart geoserver
     - startHour: 0 #included
       endHour: 7  #excluded
@@ -89,6 +95,15 @@ The workload messagequeue is deprecated by suffix messagequeue with "_skipped"
       key: arch
       operator: Equal
       value: arm64
+  affinity: Configure any required pod antiaffinity for worker pods (optional). Update the matchLabels value as needed.
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 1
+          podAffinityTerm:
+            labelSelector:
+              matchLabels:
+                workload.user.cattle.io/workloadselector: apps.statefulset-kmi-kb-uat-geocluster-workers
+            topologyKey: kubernetes.io/hostname
   envs: Configure the envs for all geocluster geoservers
   secrets: Configure the secrets for all geocluster geoservers
     credential:
@@ -161,32 +176,40 @@ The workload messagequeue is deprecated by suffix messagequeue with "_skipped"
       - mountPath: "/geoserver/data/logs/logging"
         subPath: "logging"
 ```
-## Deploy
-1. Pull the latest file from repository
-1. Find the related values yaml file
-   - KMI UAT: values-geocluster-kmi-uat.yaml
-   - KMI PROD on az-aks-prod01: values-geocluster-kmi-bushfireseason-prod.yaml
-   - KMI PROD on aks-coe-prod-02: values-geocluster-kmi-bushfireseason-coe-prod-02.yaml
-   - KB DEV: values-geocluster-kb-dev.yaml
-   - KB UAT: values-geocluster-kb-uat.yaml
-   - KB PROD: values-geocluster-kb-prod.yaml
-1. Run the command to get the values yaml file from corresponding encryped yaml file
-Get the decrypt password from 1password with name 'Encrypt password for helm chart values file'
-For example, use the following command to decrypt file values-geocluster-kmi-bushfireseason-prod.yaml
-./decrypt.sh values-geocluster-kmi-bushfireseason-prod.yaml
-1. Change the configurations if required, and also change the rleaseTime to force the deployment.
-1. Switch to the target kube cluster
+
+## Deployment
+
+1. Pull the latest changes from the repository.
+
+1. Find the related values yaml file:
+
+   - KMI UAT: `values-geocluster-kmi-uat.yaml`
+   - KMI PROD on az-aks-prod01: `values-geocluster-kmi-bushfireseason-prod.yaml`
+   - KMI PROD on aks-coe-prod-02: `values-geocluster-kmi-bushfireseason-coe-prod-02.yaml`
+   - KB DEV: `values-geocluster-kb-dev.yaml`
+   - KB UAT: `values-geocluster-kb-uat.yaml`
+   - KB PROD: `values-geocluster-kb-prod.yaml`
+
+1. Run the command to get the values yaml file from corresponding encrypted yaml file.
+   Get the decryption password from **1Password** with the name _KB/KMI Geoserver Helm chart values decryption/encryption password_.
+   For example, use the following command to decrypt file `values-geocluster-kmi-bushfireseason-prod.yaml`: `./decrypt.sh values-geocluster-kmi-bushfireseason-prod.yaml`
+
+1. Change the configurations if required, and also change the ReleaseTime to force the deployment.
+
+1. Switch context to the target Kubernetes cluster:
+
    - KMI UAT: az-aks-oim03
    - KMI1 PROD: az-aks-prod01
    - KMI1 PROD: aks-coe-prod-02
    - KB DEV: az-aks-oim03
    - KB UAT: az-aks-oim03
    - KB PROD: az-aks-prod01
-1. Using the related shell script to deploy
-   - KMI UAT: ./deploy-kmi-uat.sh
-   - KMI PROD on az-aks-prod01: ./deploy-kmi-bushfireseason-prod.sh
-   - KMI PROD on aks-coe-prod-02: ./deploy-kmi-bushfireseason-coe-prod-02.sh
-   - KB DEV: ./deploy-kb-dev.sh
-   - KB UAT: ./deploy-kb-uat.sh
-   - KB PROD: ./deploy-kb-prod.sh
 
+1. Use the related shell script to deploy changes:
+
+   - KMI UAT: `./deploy-kmi-uat.sh`
+   - KMI PROD on az-aks-prod01: `./deploy-kmi-bushfireseason-prod.sh`
+   - KMI PROD on aks-coe-prod-02: `./deploy-kmi-bushfireseason-coe-prod-02.sh`
+   - KB DEV: `./deploy-kb-dev.sh`
+   - KB UAT: `./deploy-kb-uat.sh`
+   - KB PROD: `./deploy-kb-prod.sh`

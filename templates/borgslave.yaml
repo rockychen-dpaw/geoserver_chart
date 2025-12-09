@@ -1,4 +1,4 @@
-#borgslave statefule
+#borgslave statefulset
 {{- if hasKey $.Values "borgslave" }}
 apiVersion: apps/v1
 kind: StatefulSet
