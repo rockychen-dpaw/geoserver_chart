@@ -95,6 +95,15 @@ The workload messagequeue is deprecated by suffix messagequeue with "\_skipped"
       key: arch
       operator: Equal
       value: arm64
+  affinity: Configure any required pod antiaffinity for worker pods (optional). Update the matchLabels value as needed.
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 1
+          podAffinityTerm:
+            labelSelector:
+              matchLabels:
+                workload.user.cattle.io/workloadselector: apps.statefulset-kmi-kb-uat-geocluster-workers
+            topologyKey: kubernetes.io/hostname
   envs: Configure the envs for all geocluster geoservers
   secrets: Configure the secrets for all geocluster geoservers
     credential:
@@ -182,7 +191,7 @@ The workload messagequeue is deprecated by suffix messagequeue with "\_skipped"
    - KB PROD: `values-geocluster-kb-prod.yaml`
 
 1. Run the command to get the values yaml file from corresponding encrypted yaml file.
-   Get the decryption password from **1Password** with the name _Password for encrypted Helm chart values_.
+   Get the decryption password from **1Password** with the name _KB/KMI Geoserver Helm chart values decryption/encryption password_.
    For example, use the following command to decrypt file `values-geocluster-kmi-bushfireseason-prod.yaml`: `./decrypt.sh values-geocluster-kmi-bushfireseason-prod.yaml`
 
 1. Change the configurations if required, and also change the ReleaseTime to force the deployment.
