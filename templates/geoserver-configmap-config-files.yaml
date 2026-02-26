@@ -6,20 +6,6 @@ metadata:
   annotations:
     field.cattle.io/description: customized geoserver config files
 binaryData:
-{{- if and $.Values.geoserver ($.Values.geoserver.clustering | default false) $.Values.geoserver.configmaps $.Values.geoserver.configmaps.settings (contains "jms-cluster-plugin" $.Values.geoserver.configmaps.settings.COMMUNITY_EXTENSIONS) }}
-  admin.cluster.properties: >- 
-{{ include "geoserver.admin.cluster.properties" . | b64enc | indent 4 }}
-  slave.cluster.properties: >- 
-{{ include "geoserver.slave.cluster.properties" . | b64enc | indent 4 }}
-  broker.xml: >- 
-{{ $.Files.Get "static/geocluster_broker.xml" | b64enc | indent 4 }}
-{{- end }}
-{{- if and $.Values.geoserver ($.Values.geoserver.clustering | default false) $.Values.geoserver.configmaps $.Values.geoserver.configmaps.settings (contains "hz-cluster-plugin" $.Values.geoserver.configmaps.settings.COMMUNITY_EXTENSIONS) }}
-  hazelcast.xml: >- 
-{{ include "geocluster.hazelcast.xml" . | b64enc | indent 4 }}
-  hazelcast_cluster.properties: >- 
-{{ $.Files.Get "conf/geoserver/default/cluster/hazelcast_cluster.properties" | b64enc | indent 4 }}
-{{- end }}
   index.html: >- 
 {{ $.Files.Get "static/geoserverindex.html" | b64enc | indent 4 }}
   index_without_reports.html: >- 
@@ -34,8 +20,4 @@ binaryData:
 {{ $.Files.Get "static/serverinfo.html" | b64enc | indent 4 }}
   starthistory.html: >- 
 {{ $.Files.Get "static/geoserver_restarthistory.html" | b64enc | indent 4 }}
-  geowebcache-diskquota-jdbc.xml: >- 
-{{ $.Files.Get "static/geowebcache-diskquota-jdbc.xml" | b64enc | indent 4 }}
-  geowebcache-diskquota.xml: >- 
-{{ $.Files.Get "static/geowebcache-diskquota.xml" | b64enc | indent 4 }}
 {{- end }}

@@ -95,11 +95,6 @@ if [[ "${GEOWEBCACHE_CACHE_DIR}" == "${GEOSERVER_DATA_DIR}/"* ]]; then
         mkdir -p ${GEOWEBCACHE_CACHE_DIR}
         status=$((${status} + $?))
     fi
-
-    if [[ ! -f ${GEOWEBCACHE_CACHE_DIR}/geoserver_catalog_volume ]]; then
-        touch ${GEOWEBCACHE_CACHE_DIR}/geoserver_catalog_volume
-        status=$((${status} + $?))
-    fi
 fi
 
 if [[ ${status} -ne 0 ]]; then

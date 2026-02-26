@@ -1,0 +1,13 @@
+<gwcJdbcConfiguration>
+  <dialect>PostgreSQL</dialect>
+  <connectionPool>
+    <driver>org.postgresql.Driver</driver>
+    <url>jdbc:postgresql://${GWC_DISKQUOTA_HOST}:${GWC_DISKQUOTA_PORT}/${GWC_DISKQUOTA_DB}?sslmode=${GWC_DISKQUOTA_SSL_MODE}&amp;currentSchema=${GWC_DISKQUOTA_SCHEMA}</url>
+    <username>${GWC_DISKQUOTA_USER}</username>
+    <password>${GWC_DISKQUOTA_PASS}</password>
+    <minConnections>1</minConnections>
+    <maxConnections>100</maxConnections>
+    <connectionTimeout>10000</connectionTimeout>
+    <maxOpenPreparedStatements>50</maxOpenPreparedStatements>
+  </connectionPool>
+</gwcJdbcConfiguration>

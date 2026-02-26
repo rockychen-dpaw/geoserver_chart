@@ -94,6 +94,8 @@ spec:
           volumeMounts:
             - name: config-files
               mountPath: "/geoserver/settings"
+            - name: overwrittensettings
+              mountPath: "/geoserver/overwrittensettings"
             - name: scripts
               mountPath: "/geoserver/bin"
             {{- if $.Values.geoserverHealthcheck }}
@@ -102,6 +104,7 @@ spec:
             {{- end }}
             {{- range $type,$volumes := $.Values.geoserver.volumes}}
             {{- range $name,$config := $volumes}}
+            {{- if or (ne $type "pvcs") (not (hasKey $config "catalog")) (and (hasKey $config "catalog") $config.catalog) }}
             {{- range $i,$mount := $config.mounts }}
             - mountPath: {{ $mount.mountPath | quote }}
               name: {{ $name }}
@@ -109,15 +112,18 @@ spec:
               subPath: {{ $mount.subPath | quote }}
               {{- end }}
             {{- end }}  
+            {{- end }}  
             {{- end }}
             {{- end }}
             {{- range $name,$config := $.Values.geoserver.existingVolumes }}
+            {{- if or (not (hasKey $config "catalog")) (and (hasKey $config "catalog") $config.catalog) }}
             {{- range $i,$mount := $config.mounts }}
             - mountPath: {{ $mount.mountPath }}
               name: {{ $name }}
               {{- if hasKey $mount "subPath" }}
               subPath: {{ $mount.subPath }}
               {{- end }}
+            {{- end }}  
             {{- end }}  
             {{- end }}
       containers:
@@ -214,6 +220,8 @@ spec:
           volumeMounts:
             - name: config-files
               mountPath: "/geoserver/settings"
+            - name: overwrittensettings
+              mountPath: "/geoserver/overwrittensettings"
             - name: scripts
               mountPath: "/geoserver/bin"
             {{- if gt (len ($.Values.geoserver.customsettings | default list)) 0  }}
@@ -276,6 +284,11 @@ spec:
       - name: config-files
         configMap:
           name: {{ $.Release.Name }}-geoserver-configmap-config-files
+          optional: false
+          defaultMode: 0777
+      - name: overwrittensettings
+        configMap:
+          name: {{ $.Release.Name }}-geoserver-configmap-overwrittensettings
           optional: false
           defaultMode: 0777
       - name: scripts
@@ -411,6 +424,8 @@ spec:
           volumeMounts:
             - name: config-files
               mountPath: "/geoserver/settings"
+            - name: overwrittensettings
+              mountPath: "/geoserver/overwrittensettings"
             - name: scripts
               mountPath: "/geoserver/bin"
             {{- if $.Values.geoserverHealthcheck }}
@@ -419,6 +434,7 @@ spec:
             {{- end }}
             {{- range $type,$volumes := $.Values.geoserver.volumes}}
             {{- range $name,$config := $volumes}}
+            {{- if or (ne $type "pvcs") (not (hasKey $config "catalog")) (and (hasKey $config "catalog") $config.catalog) }}
             {{- range $i,$mount := $config.mounts }}
             - mountPath: {{ $mount.mountPath | quote }}
               name: {{ $name }}
@@ -426,15 +442,18 @@ spec:
               subPath: {{ $mount.subPath | quote }}
               {{- end }}
             {{- end }}  
+            {{- end }}  
             {{- end }}
             {{- end }}
             {{- range $name,$config := $.Values.geoserver.existingVolumes }}
+            {{- if or (not (hasKey $config "catalog")) (and (hasKey $config "catalog") $config.catalog) }}
             {{- range $i,$mount := $config.mounts }}
             - mountPath: {{ $mount.mountPath }}
               name: {{ $name }}
               {{- if hasKey $mount "subPath" }}
               subPath: {{ $mount.subPath }}
               {{- end }}
+            {{- end }}  
             {{- end }}  
             {{- end }}
       containers:
@@ -533,6 +552,8 @@ spec:
           volumeMounts:
             - name: config-files
               mountPath: "/geoserver/settings"
+            - name: overwrittensettings
+              mountPath: "/geoserver/overwrittensettings"
             - name: scripts
               mountPath: "/geoserver/bin"
             {{- if gt (len ($.Values.geoserver.customsettings | default list)) 0  }}
@@ -604,6 +625,11 @@ spec:
       - name: config-files
         configMap:
           name: {{ $.Release.Name }}-geoserver-configmap-config-files
+          optional: false
+          defaultMode: 0777
+      - name: overwrittensettings
+        configMap:
+          name: {{ $.Release.Name }}-geoserver-configmap-overwrittensettings
           optional: false
           defaultMode: 0777
       - name: scripts

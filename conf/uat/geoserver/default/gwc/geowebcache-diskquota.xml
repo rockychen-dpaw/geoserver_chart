@@ -1,0 +1,12 @@
+<gwcQuotaConfiguration>
+  <enabled>true</enabled>
+  <cacheCleanUpFrequency>${DISK_QUOTA_FREQUENCY}</cacheCleanUpFrequency>
+  <cacheCleanUpUnits>SECONDS</cacheCleanUpUnits>
+  <maxConcurrentCleanUps>2</maxConcurrentCleanUps>
+  <globalExpirationPolicyName>LRU</globalExpirationPolicyName>
+  <globalQuota>
+    <value>${DISK_QUOTA_SIZE}</value>
+    <units>${DISK_QUOTA_UNIT}</units>
+  </globalQuota>
+ <quotaStore>JDBC</quotaStore>
+</gwcQuotaConfiguration>

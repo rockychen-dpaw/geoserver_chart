@@ -39,14 +39,6 @@ if [[ -f ${GEOSERVER_DATA_DIR}/www/server/geoserver_catalog_volume ]]; then
     status=$((${status} + 1))
 fi
 
-echo "Check whether the volume 'gwc' has been mounted successfully"
-if [[ "${GEOWEBCACHE_CACHE_DIR}" == "${GEOSERVER_DATA_DIR}/"* ]]; then
-    if [[ -f ${GEOWEBCACHE_CACHE_DIR}/geoserver_catalog_volume ]]; then
-        echo "Failed to mount the geoserver's gwc folder"
-        status=$((${status} + 1))
-    fi
-fi
-
 echo "Try to remove the diskquota file ${GEOSERVER_DATA_DIR}/gwc/geowebcache-diskquota.xml if exists"
 rm -f ${GEOSERVER_DATA_DIR}/gwc/geowebcache-diskquota.xml
 if [[ $? -ne 0 ]]; then
@@ -113,14 +105,14 @@ fi
 {{- if and $.Values.geoserver ($.Values.geoserver.clustering | default false) }}
   {{- if and $.Values.geoserver.configmaps $.Values.geoserver.configmaps.settings (contains "hz-cluster-plugin" $.Values.geoserver.configmaps.settings.COMMUNITY_EXTENSIONS) }}
   echo "Copy the hazelcast_cluster.properties to ${EXTRA_CONFIG_DIR}"
-  cp -f ${GEOSERVER_HOME}/settings/hazelcast_cluster.properties ${EXTRA_CONFIG_DIR}/
+  cp -f ${GEOSERVER_HOME}/overwrittensettings/hazelcast_cluster.properties ${EXTRA_CONFIG_DIR}/
   if [[ $? -ne 0 ]]; then
     echo "Failed to copy the hazelcast_cluster.properties to ${EXTRA_CONFIG_DIR}"
     status=$((${status} + 1))
   fi
 
   echo "Copy the hazelcast.xml to ${EXTRA_CONFIG_DIR}"
-  cp -f ${GEOSERVER_HOME}/settings/hazelcast.xml ${EXTRA_CONFIG_DIR}/
+  cp -f ${GEOSERVER_HOME}/overwrittensettings/hazelcast.xml ${EXTRA_CONFIG_DIR}/
   if [[ $? -ne 0 ]]; then
     echo "Failed to copy the hazelcast.xml to ${EXTRA_CONFIG_DIR}"
     status=$((${status} + 1))
@@ -129,7 +121,7 @@ fi
 
   {{- if and $.Values.geoserver.configmaps $.Values.geoserver.configmaps.settings (contains "jms-cluster-plugin" $.Values.geoserver.configmaps.settings.COMMUNITY_EXTENSIONS) }}
 #jms cluster is used
-cp -f ${GEOSERVER_HOME}/settings/broker.xml ${EXTRA_CONFIG_DIR}/broker.xml
+cp -f ${GEOSERVER_HOME}/overwrittensettings/broker.xml ${EXTRA_CONFIG_DIR}/broker.xml
 if [[ $? -ne 0 ]]; then
   echo "Failed to copy the broker.xml to ${EXTRA_CONFIG_DIR}"
   status=$((${status} + 1))
@@ -137,14 +129,14 @@ fi
 
 if [[ "${GEOSERVER_ROLE}" == "slave" ]]; then
   echo "Copy the cluster.properties for geocluster slave to ${EXTRA_CONFIG_DIR}"
-  cp -f ${GEOSERVER_HOME}/settings/slave.cluster.properties ${EXTRA_CONFIG_DIR}/cluster.properties
+  cp -f ${GEOSERVER_HOME}/overwrittensettings/slave.cluster.properties ${EXTRA_CONFIG_DIR}/cluster.properties
   if [[ $? -ne 0 ]]; then
     echo "Failed to copy the slave.cluster.properties to ${EXTRA_CONFIG_DIR}/cluster.properties"
     status=$((${status} + 1))
   fi
 else
   echo "Copy the cluster.properties for geocluster admin to ${EXTRA_CONFIG_DIR}"
-  cp -f ${GEOSERVER_HOME}/settings/admin.cluster.properties ${EXTRA_CONFIG_DIR}/cluster.properties
+  cp -f ${GEOSERVER_HOME}/overwrittensettings/admin.cluster.properties ${EXTRA_CONFIG_DIR}/cluster.properties
   if [[ $? -ne 0 ]]; then
     echo "Failed to copy the admin.cluster.properties to ${EXTRA_CONFIG_DIR}/cluster.properties"
     status=$((${status} + 1))
@@ -155,14 +147,14 @@ fi
 {{- end }}
 
 echo "Copy geowebcache-diskquota.xml to ${EXTRA_CONFIG_DIR}"
-cp -f ${GEOSERVER_HOME}/settings/geowebcache-diskquota.xml ${EXTRA_CONFIG_DIR}/
+cp -f ${GEOSERVER_HOME}/overwrittensettings/geowebcache-diskquota.xml ${EXTRA_CONFIG_DIR}/
 if [[ $? -ne 0 ]]; then
   echo "Failed to copy geowebcache-diskquota.xml to ${EXTRA_CONFIG_DIR}"
   status=$((${status} + 1))
 fi
 
 echo "Copy geowebcache-diskquota-jdbc.xml to ${EXTRA_CONFIG_DIR}"
-cp -f ${GEOSERVER_HOME}/settings/geowebcache-diskquota-jdbc.xml ${EXTRA_CONFIG_DIR}/
+cp -f ${GEOSERVER_HOME}/overwrittensettings/geowebcache-diskquota-jdbc.xml ${EXTRA_CONFIG_DIR}/
 if [[ $? -ne 0 ]]; then
   echo "Failed to copy geowebcache-diskquota-jdbc.xml to ${EXTRA_CONFIG_DIR}"
   status=$((${status} + 1))

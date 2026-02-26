@@ -10,7 +10,6 @@ spec:
   selector:
     matchLabels:
       workload.user.cattle.io/workloadselector: apps.statefulset-{{ $.Release.Namespace }}-{{ $.Release.Name }}-geoserver
-  podManagementPolicy: OrderedReady
   replicas: 1
   revisionHistoryLimit: 10
   serviceName: {{ $.Release.Name }}-geoserver-headless
@@ -65,6 +64,8 @@ spec:
           volumeMounts:
             - name: config-files
               mountPath: "/geoserver/settings"
+            - name: overwrittensettings
+              mountPath: "/geoserver/overwrittensettings"
             - name: scripts
               mountPath: "/geoserver/bin"
             {{- if $.Values.geoserverHealthcheck }}
@@ -73,6 +74,7 @@ spec:
             {{- end }}
             {{- range $type,$volumes := $.Values.geoserver.volumes}}
             {{- range $name,$config := $volumes}}
+            {{- if or (ne $type "pvcs") (not (hasKey $config "catalog")) (and (hasKey $config "catalog") $config.catalog) }}
             {{- range $i,$mount := $config.mounts }}
             - mountPath: {{ $mount.mountPath }}
               name: {{ $name }}
@@ -80,15 +82,18 @@ spec:
               subPath: {{ $mount.subPath }}
               {{- end }}
             {{- end }}  
+            {{- end }}  
             {{- end }}
             {{- end }}
             {{- range $name,$config := $.Values.geoserver.existingVolumes }}
+            {{- if or (not (hasKey $config "catalog")) (and (hasKey $config "catalog") $config.catalog) }}
             {{- range $i,$mount := $config.mounts }}
             - mountPath: {{ $mount.mountPath }}
               name: {{ $name }}
               {{- if hasKey $mount "subPath" }}
               subPath: {{ $mount.subPath }}
               {{- end }}
+            {{- end }}  
             {{- end }}  
             {{- end }}
       containers:
@@ -175,6 +180,8 @@ spec:
           volumeMounts:
             - name: config-files
               mountPath: "/geoserver/settings"
+            - name: overwrittensettings
+              mountPath: "/geoserver/overwrittensettings"
             - name: scripts
               mountPath: "/geoserver/bin"
             {{- if gt (len ($.Values.geoserver.customsettings | default list)) 0  }}
@@ -199,25 +206,7 @@ spec:
             {{- end }}  
             {{- end }}
             {{- end }}
-            {{- range $name,$config := $.Values.geoserver.adminVolumes }}
-            {{- range $i,$mount := $config.mounts }}
-            - mountPath: {{ $mount.mountPath }}
-              name: {{ $name }}
-              {{- if hasKey $mount "subPath" }}
-              subPath: {{ $mount.subPath }}
-              {{- end }}
-            {{- end }}  
-            {{- end }}
             {{- range $name,$config := $.Values.geoserver.existingVolumes }}
-            {{- range $i,$mount := $config.mounts }}
-            - mountPath: {{ $mount.mountPath }}
-              name: {{ $name }}
-              {{- if hasKey $mount "subPath" }}
-              subPath: {{ $mount.subPath }}
-              {{- end }}
-            {{- end }}  
-            {{- end }}
-            {{- range $name,$config := $.Values.geoserver.existingAdminVolumes }}
             {{- range $i,$mount := $config.mounts }}
             - mountPath: {{ $mount.mountPath }}
               name: {{ $name }}
@@ -246,6 +235,11 @@ spec:
       - name: config-files
         configMap:
           name: {{ $.Release.Name }}-geoserver-configmap-config-files
+          optional: false
+          defaultMode: 0777
+      - name: overwrittensettings
+        configMap:
+          name: {{ $.Release.Name }}-geoserver-configmap-overwrittensettings
           optional: false
           defaultMode: 0777
       - name: scripts
@@ -282,19 +276,7 @@ spec:
           claimName: {{ $.Release.Name }}-geoserver-{{ $name }}
           readOnly: {{ $config.readOnly | default "false" }}
       {{- end }}
-      {{- range $name,$config := $.Values.geoserver.adminVolumes | default dict }}
-      - name: {{ $name }}
-        persistentVolumeClaim:
-          claimName: {{ $.Release.Name }}-geoclusteradmin-{{ $name }}
-          readOnly: {{ $config.readOnly | default "false" }}
-      {{- end }}
       {{- range $name,$config := $.Values.geoserver.existingVolumes | default dict }}
-      - name: {{ $name }}
-        persistentVolumeClaim:
-          claimName: {{ $config.claimName }}
-          readOnly: {{ $config.readOnly | default "false" }}
-      {{- end }}
-      {{- range $name,$config := $.Values.geoserver.existingAdminVolumes | default dict }}
       - name: {{ $name }}
         persistentVolumeClaim:
           claimName: {{ $config.claimName }}

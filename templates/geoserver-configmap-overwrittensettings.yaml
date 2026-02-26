@@ -1,0 +1,48 @@
+{{- if $.Values.geoserver }}
+{{- $brokerxml := false }}
+{{- $hazelcast_clusterproperties := false }}
+{{- $geowebcache_diskquota_jdbcxml := false }}
+{{- $geowebcache_diskquotaxml := false }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $.Release.Name }}-geoserver-configmap-overwrittensettings
+  annotations:
+    field.cattle.io/description: overwritten geoserver config files
+binaryData:
+  {{- range $config := $.Values.geoserver.overwrittensettings }}
+  {{$config.name}}: >- 
+{{ $.Files.Get $config.path | b64enc | indent 4 }}
+    {{- if eq $config.name "broker.xml" }}
+      {{- $brokerxml = true }}
+    {{- else if eq $config.name "hazelcast_cluster.properties" }}
+      {{- $hazelcast_clusterproperties = true }}
+    {{- else if eq $config.name "geowebcache-diskquota-jdbc.xml" }}
+      {{- $geowebcache_diskquota_jdbcxml = true }}
+    {{- else if eq $config.name "geowebcache-diskquota.xml" }}
+      {{- $geowebcache_diskquotaxml = true }}
+    {{- end }}
+  {{- end }}
+  admin.cluster.properties: >- 
+{{ include "geoserver.admin.cluster.properties" . | b64enc | indent 4 }}
+  slave.cluster.properties: >- 
+{{ include "geoserver.slave.cluster.properties" . | b64enc | indent 4 }}
+{{- if not $brokerxml }}
+  broker.xml: >- 
+{{ $.Files.Get "conf/geoserver/default/cluster/geocluster_broker.xml" | b64enc | indent 4 }}
+{{- end }}
+  hazelcast.xml: >- 
+{{ include "geocluster.hazelcast.xml" . | b64enc | indent 4 }}
+{{- if not $hazelcast_clusterproperties }}
+  hazelcast_cluster.properties: >- 
+{{ $.Files.Get "conf/geoserver/default/cluster/hazelcast_cluster.properties" | b64enc | indent 4 }}
+{{- end }}
+{{- if not $geowebcache_diskquota_jdbcxml }}
+  geowebcache-diskquota-jdbc.xml: >- 
+{{ $.Files.Get "conf/geoserver/default/gwc/geowebcache-diskquota-jdbc.xml" | b64enc | indent 4 }}
+{{- end }}
+{{- if not $geowebcache_diskquotaxml }}
+  geowebcache-diskquota.xml: >- 
+{{ $.Files.Get "conf/geoserver/default/gwc/geowebcache-diskquota.xml" | b64enc | indent 4 }}
+{{- end }}
+{{- end }}
