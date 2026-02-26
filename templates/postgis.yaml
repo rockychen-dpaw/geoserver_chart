@@ -1,4 +1,4 @@
-#postgis statefule
+#postgis statefulset
 {{- if hasKey $.Values "postgis" }}
 {{- $startupProbe :=  $.Values.postgis.startupProbe | default dict }}
 {{- $livenessProbe :=  $.Values.postgis.livenessProbe | default dict }}

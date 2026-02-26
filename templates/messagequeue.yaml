@@ -1,4 +1,4 @@
-#messagequeue statefule
+#messagequeue statefulset
 {{- if hasKey $.Values "messagequeue" }}
 {{- $startupProbe :=  $.Values.messagequeue.startupProbe | default dict }}
 {{- $livenessProbe :=  $.Values.messagequeue.livenessProbe | default dict }}
