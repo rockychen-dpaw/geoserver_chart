@@ -1,0 +1,19 @@
+{{- if hasKey $.Values "gwcClean" }}
+{{- $configmaps := 0 }} 
+
+{{- range $name,$data := $.Values.gwcClean.configmaps | default dict }}
+{{- $configmaps = add1 $configmaps}}
+{{- if gt $configmaps 1 }}
+---
+{{- end }}
+apiVersion: v1
+data:
+  {{- range $key,$value := $data }}
+  {{ $key }}: {{ $value | toString | quote }}
+  {{- end }}
+kind: ConfigMap
+metadata:
+  name: {{ $.Release.Name }}-geoserver-gwcclean-configmap-{{ $name }}
+  namespace: {{ $.Release.Namespace }}
+{{- end }}
+{{- end }}

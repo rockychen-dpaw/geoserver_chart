@@ -1,0 +1,144 @@
+{{- if and $.Values.gwcClean $.Values.gwcClean.checkSchedule }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  {{- if ($.Values.geoserver.clustering | default false) }}
+  name: {{ $.Release.Name}}-geocluster-gwccheck
+  {{- else }}
+  name: {{ $.Release.Name}}-geoserver-gwccheck
+  {{- end }}
+  namespace: {{ $.Release.Namespace }}
+spec:
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    metadata:
+      namespace: {{ $.Release.Namespace }}
+    spec:
+      backoffLimit: {{ $.Values.gwcClean.backoffLimit | default 0 |int }}
+      template:
+        spec:
+          affinity: {}
+          containers:
+            - command:
+                - python
+                - -m
+                - geoserver_rest.gwccheck
+              env:
+                - name: RELEASE_TIME
+                {{- if eq ($.Values.gwcClean.releaseTime | default "")  "" }}
+                  value: {{ now | date "2006-01-02T15:04:05" | quote }}
+                {{- else }}
+                  value: {{ $.Values.gwcClean.releaseTime | quote }}
+                {{- end }}
+                {{- if ($.Values.geoserver.clustering | default false) }}
+                - name: GEOSERVER_NAME
+                  value: {{$.Release.Name}}-geocluster
+                - name: GEOSERVER_URL
+                  value: "http://{{$.Release.Name}}-geoclusteradmin:{{ $.Values.geoserver.port | default 8080 }}/geoserver"
+                {{- else }}
+                - name: GEOSERVER_NAME
+                  value: {{$.Release.Name}}-geoserver
+                - name: GEOSERVER_URL
+                  value: "http://{{$.Release.Name}}-geoserver:{{ $.Values.geoserver.port | default 8080 }}/geoserver"
+                {{- end }}
+                {{- range $key,$value := $.Values.gwcClean.envs | default dict }}
+                - name: {{ $key }}
+                  value: {{ $value | quote }}
+                {{- end }}
+              envFrom:
+                {{- range $name,$data := $.Values.gwcClean.secrets }}
+                - secretRef:
+                    name: {{ $.Release.Name }}-geoserver-gwcclean-secret-{{ $name }}
+                    optional: false
+                {{- end }}
+                {{- range $name,$data := $.Values.gwcClean.configmaps }}
+                - configMapRef:
+                    name: {{ $.Release.Name }}-geoserver-gwcclean-configmap-{{ $name }}
+                    optional: false
+                {{- end }}
+              image: {{ $.Values.gwcClean.image}}
+              imagePullPolicy: Always
+              {{- if ($.Values.geoserver.clustering | default false) }}
+              name: {{ $.Release.Name}}-geocluster-gwccheck
+              {{- else }}
+              name: {{ $.Release.Name}}-geoserver-gwccheck
+              {{- end }}
+              {{- if hasKey $.Values.gwcClean "resources" }}
+              resources:
+{{ $.Values.gwcClean.resources | toYaml | indent 16 }}
+              {{- end }}
+              stdin: true
+              terminationMessagePath: /dev/termination-log
+              terminationMessagePolicy: File
+              tty: true
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop:
+                    - ALL
+                {{- if hasKey $.Values.gwcClean "groupid" }}
+                runAsGroup: {{ $.Values.gwcClean.groupid }}
+                {{- end }}
+                {{- if hasKey $.Values.gwcClean "userid" }}
+                runAsUser: {{ $.Values.gwcClean.userid }}
+                runAsNonRoot: true
+                {{- else}}
+                runAsNonRoot: false
+                {{- end }}
+              workingDir: /app
+              volumeMounts:
+                {{- if and (hasKey $.Values "gwcClean") $.Values.gwcClean.volume }}
+                - name: report-data
+                  mountPath: {{ $.Values.gwcClean.volume.mountPath | default "/app/reports" }}
+                {{- end }}
+                {{- range $name,$config := $.Values.gwcClean.existingVolumes }}
+                {{- range $i,$mount := $config.mounts }}
+                - mountPath: {{ $mount.mountPath }}
+                  name: {{ $name }}
+                  {{- if hasKey $mount "subPath" }}
+                  subPath: {{ $mount.subPath }}
+                  {{- end }}
+                {{- end }}  
+                {{- end }}
+          dnsPolicy: ClusterFirst
+          {{- if hasKey $.Values.gwcClean "imagepull" }}
+          imagePullSecrets:
+            - name: {{ $.Release.Name }}-geoserver-gwcclean-secret-imagepull
+          {{- end }}
+          restartPolicy: Never
+          {{- if hasKey $.Values.gwcClean "groupid" }}
+          securityContext:
+            fsGroup: {{ $.Values.gwcClean.groupid }}
+          {{- end }}
+          schedulerName: default-scheduler
+          terminationGracePeriodSeconds: 30
+          {{ if hasKey $.Values.gwcClean "tolerations" }}
+          tolerations:
+{{ $.Values.gwcClean.tolerations | toYaml | indent 12 }}
+          {{- end }}
+          {{- if $.Values.gwcClean.nodeSelector }}
+          nodeSelector:
+{{ $.Values.gwcClean.nodeSelector | toYaml | indent 12 }}
+          {{- end }}
+          volumes:
+            {{- if and (hasKey $.Values "gwcClean") $.Values.gwcClean.volume }}
+            - name: report-data
+              persistentVolumeClaim:
+                claimName: {{ $.Release.Name }}-geoserver-gwcclean-report-data
+            {{- end }}
+            {{- range $name,$config := $.Values.gwcClean.existingVolumes | default dict }}
+            - name: {{ $name }}
+              persistentVolumeClaim:
+                {{- if hasKey $config "relativeClaimName" }}
+                claimName: {{ $.Release.Name}}-{{ $config.relativeClaimName }}
+                {{- else }}
+                claimName: {{ $config.claimName }}
+                {{- end }}
+                readOnly: {{ $config.readOnly | default "false" }}
+            {{- end }}
+
+  schedule: {{ $.Values.gwcClean.checkSchedule }}
+  successfulJobsHistoryLimit: {{ $.Values.gwcClean.successfulJobsHistoryLimit | default 3 }}
+  failedJobsHistoryLimit: {{ $.Values.gwcClean.failedJobsHistoryLimit | default 1 }}
+  suspend: false
+{{- end }}

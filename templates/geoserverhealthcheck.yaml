@@ -89,7 +89,7 @@ spec:
               {{- end }}
               {{- if hasKey $.Values.geoserverHealthcheck "resources" }}
               resources:
-{{ $.Values.geoserver.resources | toYaml | indent 16 }}
+{{ $.Values.geoserverHealthcheck.resources | toYaml | indent 16 }}
               {{- end }}
               stdin: true
               terminationMessagePath: /dev/termination-log
@@ -100,19 +100,21 @@ spec:
                 capabilities:
                   drop:
                     - ALL
-                {{- if hasKey $.Values.geoserver "groupid" }}
-                runAsGroup: {{ $.Values.geoserver.groupid }}
+                {{- if hasKey $.Values.geoserverHealthcheck "groupid" }}
+                runAsGroup: {{ $.Values.geoserverHealthcheck.groupid }}
                 {{- end }}
-                {{- if hasKey $.Values.geoserver "userid" }}
-                runAsUser: {{ $.Values.geoserver.userid }}
+                {{- if hasKey $.Values.geoserverHealthcheck "userid" }}
+                runAsUser: {{ $.Values.geoserverHealthcheck.userid }}
                 runAsNonRoot: true
                 {{- else}}
                 runAsNonRoot: false
                 {{- end }}
               workingDir: /app
               volumeMounts:
+                {{- if and (hasKey $.Values "geoserverHealthcheck") $.Values.geoserverHealthcheck.volume }}
                 - name: report-data
-                  mountPath: /app/reports
+                  mountPath: {{ $.Values.geoserverHealthcheck.volume.mountPath | default "/app/reports" }}
+                {{- end }}  
                 {{- range $name,$config := $.Values.geoserverHealthcheck.existingVolumes }}
                 {{- range $i,$mount := $config.mounts }}
                 - mountPath: {{ $mount.mountPath }}
@@ -134,18 +136,20 @@ spec:
           {{- end }}
           schedulerName: default-scheduler
           terminationGracePeriodSeconds: 30
-          {{ if hasKey $.Values.geoserver "tolerations" }}
+          {{ if hasKey $.Values.geoserverHealthcheck "tolerations" }}
           tolerations:
-{{ $.Values.geoserver.tolerations | toYaml | indent 12 }}
+{{ $.Values.geoserverHealthcheck.tolerations | toYaml | indent 12 }}
           {{- end }}
-          {{- if $.Values.geoserver.nodeSelector }}
+          {{- if $.Values.geoserverHealthcheck.nodeSelector }}
           nodeSelector:
-{{ $.Values.geoserver.nodeSelector | toYaml | indent 12 }}
+{{ $.Values.geoserverHealthcheck.nodeSelector | toYaml | indent 12 }}
           {{- end }}
           volumes:
+            {{- if and (hasKey $.Values "geoserverHealthcheck") $.Values.geoserverHealthcheck.volume }}
             - name: report-data
               persistentVolumeClaim:
                 claimName: {{ $.Release.Name }}-geoserver-healthcheck-report-data
+            {{- end }}
             {{- range $name,$config := $.Values.geoserverHealthcheck.existingVolumes | default dict }}
             - name: {{ $name }}
               persistentVolumeClaim:

@@ -22,13 +22,15 @@ spec:
       protocol: TCP
       targetPort: 42
   selector:
-    workload.user.cattle.io/workloadselector: apps.statefulset-{{ $.Release.Namespace}}-{{ $.Release.Name }}-geocluster-workers
+    workload.user.cattle.io/workloadselector: apps.{{ $.Release.Namespace}}-{{ $.Release.Name }}-geocluster-workers
   sessionAffinity: None
   type: ClusterIP
 
 {{- if not $adminServerIsWorker }}
+#admin server is not a worker
+{{- if or (not (hasKey $.Values.geoserver "statefulset4Server")) $.Values.geoserver.statefulset4Server }}
+#admin server is not statefulset
 ---
-
 apiVersion: v1
 kind: Service
 metadata:
@@ -47,12 +49,13 @@ spec:
       protocol: TCP
       targetPort: 42
   selector:
-    workload.user.cattle.io/workloadselector: apps.statefulset-{{ $.Release.Namespace}}-{{ $.Release.Name }}-geoclusteradmin
+    workload.user.cattle.io/workloadselector: apps.{{ $.Release.Namespace}}-{{ $.Release.Name }}-geoclusteradmin
   sessionAffinity: None
   type: ClusterIP
 
 {{- end }}
-{{- else if $.Values.geoserver }}
+{{- end }}
+{{- else if or (not (hasKey $.Values.geoserver "statefulset4Server")) $.Values.geoserver.statefulset4Server }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -71,7 +74,7 @@ spec:
       protocol: TCP
       targetPort: 42
   selector:
-    workload.user.cattle.io/workloadselector: apps.statefulset-{{ $.Release.Namespace}}-{{ $.Release.Name }}-geoserver
+    workload.user.cattle.io/workloadselector: apps.{{ $.Release.Namespace}}-{{ $.Release.Name }}-geoserver
   sessionAffinity: None
   type: ClusterIP
 

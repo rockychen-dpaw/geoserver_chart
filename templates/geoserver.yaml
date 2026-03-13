@@ -2,21 +2,27 @@
 {{- $startupProbe :=  $.Values.geoserver.startupProbe | default dict }}
 {{- $livenessProbe :=  $.Values.geoserver.livenessProbe | default dict }}
 apiVersion: apps/v1
+{{- if or (not (hasKey $.Values.geoserver "statefulset4Server")) $.Values.geoserver.statefulset4Server }}
 kind: StatefulSet
+{{- else }}
+kind: Deployment
+{{- end }}
 metadata:
   name: {{ $.Release.Name }}-geoserver
   namespace: {{ $.Release.Namespace }}
 spec:
   selector:
     matchLabels:
-      workload.user.cattle.io/workloadselector: apps.statefulset-{{ $.Release.Namespace }}-{{ $.Release.Name }}-geoserver
+      workload.user.cattle.io/workloadselector: apps.{{ $.Release.Namespace }}-{{ $.Release.Name }}-geoserver
   replicas: 1
   revisionHistoryLimit: 10
+  {{- if or (not (hasKey $.Values.geoserver "statefulset4Server")) $.Values.geoserver.statefulset4Server }}
   serviceName: {{ $.Release.Name }}-geoserver-headless
+  {{- end }}
   template:
     metadata:
       labels:
-        workload.user.cattle.io/workloadselector: apps.statefulset-{{ $.Release.Namespace }}-{{ $.Release.Name }}-geoserver
+        workload.user.cattle.io/workloadselector: apps.{{ $.Release.Namespace }}-{{ $.Release.Name }}-geoserver
       namespace: {{ $.Release.Namespace }}
     spec:
       initContainers:

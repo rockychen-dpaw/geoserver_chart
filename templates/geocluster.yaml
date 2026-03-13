@@ -12,8 +12,8 @@ metadata:
 spec:
   selector:
     matchLabels:
-      workload.user.cattle.io/workloadselector: apps.statefulset-{{ $.Release.Namespace}}-{{ $.Release.Name }}-geocluster-workers
-      workload.user.cattle.io/geoclusterselector: apps.statefulset-{{ $.Release.Namespace}}-{{ $.Release.Name }}-geocluster
+      workload.user.cattle.io/workloadselector: apps.{{ $.Release.Namespace}}-{{ $.Release.Name }}-geocluster-workers
+      workload.user.cattle.io/geoclusterselector: apps.{{ $.Release.Namespace}}-{{ $.Release.Name }}-geocluster
   podManagementPolicy: OrderedReady
   replicas: {{ $.Values.geoserver.replicas | default 2 }}
   revisionHistoryLimit: 10
@@ -23,8 +23,8 @@ spec:
       creationTimestamp: null
       labels:
         #same as matchLabels
-        workload.user.cattle.io/workloadselector: apps.statefulset-{{ $.Release.Namespace}}-{{ $.Release.Name }}-geocluster-workers
-        workload.user.cattle.io/geoclusterselector: apps.statefulset-{{ $.Release.Namespace}}-{{ $.Release.Name }}-geocluster
+        workload.user.cattle.io/workloadselector: apps.{{ $.Release.Namespace}}-{{ $.Release.Name }}-geocluster-workers
+        workload.user.cattle.io/geoclusterselector: apps.{{ $.Release.Namespace}}-{{ $.Release.Name }}-geocluster
     spec:
       {{- if and (gt ($.Values.geoserver.replicas | default 1 | int) 1 ) (get $.Values.geoserver "topologySpreadConstraints") }}
       #only include the topology if replicas is greater than 1
@@ -38,7 +38,7 @@ spec:
         whenUnsatisfiable: {{ $constraint.whenUnsatisfiable | default "ScheduleAnyway" }}
         labelSelector:
           matchLabels:
-            workload.user.cattle.io/workloadselector: apps.statefulset-{{ $.Release.Namespace}}-{{ $.Release.Name }}-geocluster
+            workload.user.cattle.io/workloadselector: apps.{{ $.Release.Namespace}}-{{ $.Release.Name }}-geocluster-workers
       {{- end }}
       {{- end }}
       initContainers:
@@ -360,24 +360,30 @@ spec:
 {{- if not $adminServerIsWorker }}
 ---
 apiVersion: apps/v1
+{{- if or (not (hasKey $.Values.geoserver "statefulset4Server")) $.Values.geoserver.statefulset4Server }}
 kind: StatefulSet
+{{- else }}
+kind: Deployment
+{{- end }}
 metadata:
   name: {{ $.Release.Name }}-geoclusteradmin
 spec:
   selector:
     matchLabels:
-      workload.user.cattle.io/workloadselector: apps.statefulset-{{ $.Release.Namespace}}-{{ $.Release.Name }}-geoclusteradmin
-      workload.user.cattle.io/geoclusterselector: apps.statefulset-{{ $.Release.Namespace}}-{{ $.Release.Name }}-geocluster
+      workload.user.cattle.io/workloadselector: apps.{{ $.Release.Namespace}}-{{ $.Release.Name }}-geoclusteradmin
+      workload.user.cattle.io/geoclusterselector: apps.{{ $.Release.Namespace}}-{{ $.Release.Name }}-geocluster
   podManagementPolicy: OrderedReady
   replicas: 1
   revisionHistoryLimit: 10
+  {{- if or (not (hasKey $.Values.geoserver "statefulset4Server")) $.Values.geoserver.statefulset4Server }}
   serviceName: {{ $.Release.Name }}-geoclusteradmin-headless
+  {{- end }}
   template:
     metadata:
       creationTimestamp: null
       labels:
-        workload.user.cattle.io/workloadselector: apps.statefulset-{{ $.Release.Namespace}}-{{ $.Release.Name }}-geoclusteradmin
-        workload.user.cattle.io/geoclusterselector: apps.statefulset-{{ $.Release.Namespace}}-{{ $.Release.Name }}-geocluster
+        workload.user.cattle.io/workloadselector: apps.{{ $.Release.Namespace}}-{{ $.Release.Name }}-geoclusteradmin
+        workload.user.cattle.io/geoclusterselector: apps.{{ $.Release.Namespace}}-{{ $.Release.Name }}-geocluster
     spec:
       initContainers:
         - name: {{ $.Release.Name }}-geoclusteradmin-init

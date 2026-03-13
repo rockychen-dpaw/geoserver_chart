@@ -39,10 +39,10 @@ binaryData:
 {{- end }}
 {{- if not $geowebcache_diskquota_jdbcxml }}
   geowebcache-diskquota-jdbc.xml: >- 
-{{ $.Files.Get "conf/geoserver/default/gwc/geowebcache-diskquota-jdbc.xml" | b64enc | indent 4 }}
+{{ $.Files.Get "conf/geoserver/default/gwc/geowebcache-diskquota-jdbc.hsql.xml" | b64enc | indent 4 }}
 {{- end }}
 {{- if not $geowebcache_diskquotaxml }}
   geowebcache-diskquota.xml: >- 
-{{ $.Files.Get "conf/geoserver/default/gwc/geowebcache-diskquota.xml" | b64enc | indent 4 }}
+{{ $.Files.Get "conf/geoserver/default/gwc/geowebcache-diskquota.hsql.xml" | b64enc | indent 4 }}
 {{- end }}
 {{- end }}

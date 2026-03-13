@@ -7,5 +7,5 @@ spec:
   minAvailable: {{ sub $.Values.geoserver.replicas 1 }}
   selector:
     matchLabels:
-      workload.user.cattle.io/workloadselector: apps.statefulset-{{ $.Release.Namespace}}-{{ $.Release.Name }}-geocluster-workers
+      workload.user.cattle.io/workloadselector: apps.{{ $.Release.Namespace}}-{{ $.Release.Name }}-geocluster-workers
 {{- end }}

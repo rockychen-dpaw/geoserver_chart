@@ -2,7 +2,15 @@
 <gwcConfiguration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://geowebcache.org/schema/1.23.0 http://geowebcache.org/schema/1.23.0/geowebcache.xsd" xmlns="http://geowebcache.org/schema/1.23.0">
   <version>1.23.0</version>
   <backendTimeout>120</backendTimeout>
-  <lockProvider>nioLock</lockProvider>
+  <blobStores>
+    <FileBlobStore default="true">
+      <id>default</id>
+      <enabled>true</enabled>
+      <baseDirectory>/geoserver/data/tiles</baseDirectory>
+      <fileSystemBlockSize>4096</fileSystemBlockSize>
+      <pathGeneratorType>DEFAULT</pathGeneratorType>
+    </FileBlobStore>
+  </blobStores>
   <gridSets>
     <gridSet>
       <name>gda94</name>

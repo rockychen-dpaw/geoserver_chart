@@ -6,10 +6,19 @@ metadata:
   annotations:
     field.cattle.io/description: customized geoserver config files
 binaryData:
+{{- if hasKey $.Values "gwcClean" }}
+  default_gwclayers.html: >- 
+{{ $.Files.Get "static/default_gwclayers.html" | b64enc | indent 4 }}
   index.html: >- 
 {{ $.Files.Get "static/geoserverindex.html" | b64enc | indent 4 }}
-  index_without_reports.html: >- 
-{{ $.Files.Get "static/geoserverindex_without_reports.html" | b64enc | indent 4 }}
+  index_without_healthcheck.html: >- 
+{{ $.Files.Get "static/geoserverindex_without_healthcheck.html" | b64enc | indent 4 }}
+{{- else }}
+  index.html: >- 
+{{ $.Files.Get "static/geoserverindex_without_gwcclean.html" | b64enc | indent 4 }}
+  index_without_healthcheck.html: >- 
+{{ $.Files.Get "static/geoserverindex_geoserveronly.html" | b64enc | indent 4 }}
+{{- end }}
   livenesslogindex.html: >- 
 {{ $.Files.Get "static/livenesslogindex.html" | b64enc | indent 4 }}
   {{- if hasKey $.Values "geoserverHealthcheck" }}

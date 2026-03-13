@@ -19,7 +19,7 @@ spec:
       protocol: TCP
       targetPort: 8080
   selector:
-    workload.user.cattle.io/workloadselector: apps.statefulset-{{ $.Release.Namespace}}-{{ $.Release.Name }}-geocluster-workers
+    workload.user.cattle.io/workloadselector: apps.{{ $.Release.Namespace}}-{{ $.Release.Name }}-geocluster-workers
   sessionAffinity: None
   type: ClusterIP
 
@@ -40,7 +40,7 @@ spec:
       protocol: TCP
       targetPort: 8080
   selector:
-    workload.user.cattle.io/geoclusterselector: apps.statefulset-{{ $.Release.Namespace}}-{{ $.Release.Name }}-geocluster
+    workload.user.cattle.io/geoclusterselector: apps.{{ $.Release.Namespace}}-{{ $.Release.Name }}-geocluster
   sessionAffinity: None
   type: ClusterIP
 
@@ -89,7 +89,7 @@ spec:
       protocol: TCP
       targetPort: 8080
   selector:
-    workload.user.cattle.io/workloadselector: apps.statefulset-{{ $.Release.Namespace}}-{{ $.Release.Name }}-geoclusteradmin
+    workload.user.cattle.io/workloadselector: apps.{{ $.Release.Namespace}}-{{ $.Release.Name }}-geoclusteradmin
   sessionAffinity: None
   type: ClusterIP
 {{- end }}

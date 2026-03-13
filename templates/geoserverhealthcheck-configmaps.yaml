@@ -1,0 +1,19 @@
+{{- if hasKey $.Values "geoserverHealthcheck" }}
+{{- $configmaps := 0 }} 
+
+{{- range $name,$data := $.Values.geoserverHealthcheck.configmaps | default dict }}
+{{- $configmaps = add1 $configmaps}}
+{{- if gt $configmaps 1 }}
+---
+{{- end }}
+apiVersion: v1
+data:
+  {{- range $key,$value := $data }}
+  {{ $key }}: {{ $value | toString | quote }}
+  {{- end }}
+kind: ConfigMap
+metadata:
+  name: {{ $.Release.Name }}-geoserver-healthcheck-configmap-{{ $name }}
+  namespace: {{ $.Release.Namespace }}
+{{- end }}
+{{- end }}

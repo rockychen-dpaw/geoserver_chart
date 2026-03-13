@@ -6,8 +6,46 @@
 
 status=0
 echo "Begin to setup the index page and report folder"
+
+{{- if hasKey $.Values "gwcClean" }}
+#create the reports.html if not exist
+if [[ -e "/geoserver/reports/gwclayers.html" ]]; then
+    if [[ ! -f "/geoserver/reports/gwclayers.html" ]]; then
+        echo "Remove gwclayers.html(/geoserver/reports/gwclayers.html)"
+        rm -fdr "/geoserver/reports/gwclayers.html"
+        status=$((${status} + $?))
+    fi
+fi
+if [[ ! -f "/geoserver/reports/gwclayers.html" ]]; then
+    echo "Create the default gwclayers.html"
+    cp /geoserver/settings/default_gwclayers.html "/geoserver/reports/gwclayers.html"
+    status=$((${status} + $?))
+fi
+
+#create soft link
+if [[ -e "${GEOSERVER_DATA_DIR}/www/server/gwclayers.html" ]]; then
+    if [[ ! -h "${GEOSERVER_DATA_DIR}/www/server/gwclayers.html" ]]; then
+        echo "Remove non-link file(${GEOSERVER_DATA_DIR}/www/server/gwclayers.html)"
+        rm -fdr "${GEOSERVER_DATA_DIR}/www/server/gwclayers.html"
+        status=$((${status} + $?))
+    fi
+fi
+if [[ ! -h "${GEOSERVER_DATA_DIR}/www/server/gwclayers.html" ]]; then
+    #create soft link www/server/reports 
+    echo "Create the soft link(${GEOSERVER_DATA_DIR}/www/server/gwclayers.html)"
+    ln -s "/geoserver/reports/gwclayers.html" "${GEOSERVER_DATA_DIR}/www/server/gwclayers.html"
+    status=$((${status} + $?))
+fi
+{{- end }}
+
 #prepare the index.html file and find the reportFolder
-{{- if hasKey $.Values "geoserverHealthcheck" }}
+{{- if not (hasKey $.Values "geoserverHealthcheck") }}
+    #geosever healthcheck disabled
+echo "Copy /geoserver/settings/index_without_healthcheck.html as index page"
+cp /geoserver/settings/index_without_healthcheck.html /geoserver/data/www/server/index.html
+status=$((${status} + $?))
+exit ${status}
+{{- else }}
     #geosever healthcheck enabled
     {{- if ($.Values.geoserver.clustering | default false) }}
          #geocluster deployment
@@ -30,8 +68,8 @@ fi
             #healcheck enabled for geocluster admin server
 if [[ "${GEOSERVER_ROLE}" == "slave" ]]; then
     #slave server
-    echo "Copy /geoserver/settings/index_without_reports.html as index page"
-    cp /geoserver/settings/index_without_reports.html /geoserver/data/www/server/index.html
+    echo "Copy /geoserver/settings/index_without_healthcheck.html as index page"
+    cp /geoserver/settings/index_without_healthcheck.html /geoserver/data/www/server/index.html
     status=$((${status} + $?))
     exit ${status}
 else
@@ -53,13 +91,6 @@ cp /geoserver/settings/index.html /geoserver/data/www/server/index.html
 status=$((${status} + $?))
 reportFolder="{{ $.Release.Name }}-geoserver"
     {{- end }}
-{{- else }}
-    #geosever healthcheck disabled
-echo "Copy /geoserver/settings/index_without_reports.html as index page"
-cp /geoserver/settings/index_without_reports.html /geoserver/data/www/server/index.html
-status=$((${status} + $?))
-exit ${status}
-{{- end }}
 
 echo "reportFolder=/geoserver/reports/${reportFolder}"
 #create the reports folder if not exist
@@ -113,5 +144,6 @@ fi
 
 exit ${status}
 
+{{- end }}
 {{- end }}
 
