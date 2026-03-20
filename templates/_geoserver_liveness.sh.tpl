@@ -4,6 +4,11 @@
   {{- $adminServerIsWorker =  $.Values.geoserver.adminServerIsWorker }}
 {{- end }}
 
+if [[ ! -f "${GEOSERVER_DATA_DIR}/www/server/serverinfo.html" ]]; then
+  #the serverinfo.html doesn't exist, recover it from backup file
+  cp ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html.bak ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html
+fi
+
 source /geoserver/bin/set_geoserverrole
 geoserverpid=$(cat /tmp/geoserverpid)
 

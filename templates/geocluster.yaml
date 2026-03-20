@@ -372,7 +372,9 @@ spec:
     matchLabels:
       workload.user.cattle.io/workloadselector: apps.{{ $.Release.Namespace}}-{{ $.Release.Name }}-geoclusteradmin
       workload.user.cattle.io/geoclusterselector: apps.{{ $.Release.Namespace}}-{{ $.Release.Name }}-geocluster
+  {{- if or (not (hasKey $.Values.geoserver "statefulset4Server")) $.Values.geoserver.statefulset4Server }}
   podManagementPolicy: OrderedReady
+  {{- end }}
   replicas: 1
   revisionHistoryLimit: 10
   {{- if or (not (hasKey $.Values.geoserver "statefulset4Server")) $.Values.geoserver.statefulset4Server }}

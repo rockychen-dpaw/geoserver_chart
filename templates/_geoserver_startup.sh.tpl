@@ -239,6 +239,10 @@ fi
 {{- end }}
 sed -i -e "s/<span id=\"heartbeat\">[^<]*<\/span>/<span id=\"heartbeat\">${now}<\/span>/" -e "s/<span id=\"heartbeat_status\">[^<]*<\/span>/<span id=\"heartbeat_status\">${pingstatus}<\/span>/" -e "s/<span id=\"heartbeat_processingtime\">[^<]*<\/span>/<span id=\"heartbeat_processingtime\">${pingtime}<\/span>/" ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html
 
+if [[ $status -eq 0 ]]; then
+    #sometimes, serverinfo.html was deleted for unknown reason, so backup a serverinfo.html first and recover it if it doesn't exist in the future
+    cp ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html.bak
+fi
 
 exit $status
 {{- end }}

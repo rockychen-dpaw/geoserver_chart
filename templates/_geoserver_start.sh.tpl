@@ -188,6 +188,8 @@ fi
 export GEOSERVER_CSRF_WHITELIST={{ (printf "%s,%s" ($.Values.geoserver.domain | default (printf "%s.dbca.wa.gov.au" $.Release.Name)) ($.Values.geoserver.adminDomain | default (printf "%sadmin.dbca.wa.gov.au" $.Release.Name ))) | quote }}
 {{- end }}
 
+{{ $.Files.Get "static/manage_geowebcache.xml.sh" }}
+
 echo "GEOSERVER_CSRF_WHITELIST=${GEOSERVER_CSRF_WHITELIST}"
 echo "Begin to start geoserver"
 /scripts/entrypoint.sh
