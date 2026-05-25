@@ -4,10 +4,6 @@
   {{- $adminServerIsWorker =  $.Values.geoserver.adminServerIsWorker }}
 {{- end }}
 
-if [[ ! -f "${GEOSERVER_DATA_DIR}/www/server/serverinfo.html" ]]; then
-  #the serverinfo.html doesn't exist, recover it from backup file
-  cp ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html.bak ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html
-fi
 
 source /geoserver/bin/set_geoserverrole
 geoserverpid=$(cat /tmp/geoserverpid)
@@ -24,11 +20,19 @@ LIVENESSLOG_EXPIREDAYS={{$.Values.geoserver.livenesslogExpiredays | default 30}}
 {{ $.Files.Get "static/manage_livenesslog.sh"  }}
 
 {{- if and (get $.Values.geoserver "restartPolicy") (get $.Values.geoserver.restartPolicy "restartSchedule") }}
-canRestart=0
+#can restart if the var 'restart' which is set by the script is 1 otherwise can't restart
+#check whether can restart the geoserver.the var 'canRestart' will be set to 1 if can restart, otherwise will set to 0
 source /geoserver/bin/geoserver_can_restart
-
 if [[ ${canRestart} -eq 1 ]]; then
+  #check whether should restart the geoserver.the var 'restart' will be set to  1 if should restart, otherwise will set to 0
   source /geoserver/bin/geoserver_restart
+  if [[ ${restart} -eq 1 ]]; then
+    if [[ ! -f "${GEOSERVER_DATA_DIR}/www/server/serverinfo.html" ]]; then
+      #the serverinfo.html doesn't exist, recover it from backup file
+      cp ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html.bak ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html
+    fi
+    exit 1
+  fi
 fi
 {{- end}}
 
@@ -79,12 +83,20 @@ if [[ ${status} -eq 0 ]]; then
     echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Liveness: Geoserver is online. ${resourceusage}, ping: ${pingstatus}, pingtime: ${pingtime}" >> ${livenesslogfile}
   {{- end }}
   fi
+  if [[ ! -f "${GEOSERVER_DATA_DIR}/www/server/serverinfo.html" ]]; then
+    #the serverinfo.html doesn't exist, recover it from backup file
+    cp ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html.bak ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html
+  fi
   exit 0
 fi
 {{- if eq ($livenessProbe.failureThreshold | default 2 | int) 1 }}
   {{- if ge $log_level ((get $log_levels "ERROR") | int) }}
   echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Liveness: Geoserver is offline, restart. ${resourceusage}, ping: ${pingstatus}, pingtime: ${pingtime}" >> ${livenesslogfile}
   {{- end }}
+  if [[ ! -f "${GEOSERVER_DATA_DIR}/www/server/serverinfo.html" ]]; then
+    #the serverinfo.html doesn't exist, recover it from backup file
+    cp ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html.bak ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html
+  fi
   exit ${status}
 {{- else }}
 if [[ -f /tmp/geoserver_failuretimes ]]; then
@@ -99,11 +111,19 @@ if [[ ${failureTimes} -ge {{ $livenessProbe.failureThreshold | default 2 }} ]]; 
   {{- if ge $log_level ((get $log_levels "ERROR") | int) }}
   echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Liveness: Geoserver is offline on the ${failureTimes}th continous check, restart. ${resourceusage}, ping: ${pingstatus}, pingtime: ${pingtime}" >> ${livenesslogfile}
   {{- end }}
+  if [[ ! -f "${GEOSERVER_DATA_DIR}/www/server/serverinfo.html" ]]; then
+    #the serverinfo.html doesn't exist, recover it from backup file
+    cp ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html.bak ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html
+  fi
   exit ${status}
 else
   {{- if ge $log_level ((get $log_levels "ERROR") | int) }}
   echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Liveness: Geoserver is offline on the ${failureTimes}th continous check, need to check again. ${resourceusage}, ping: ${pingstatus}, pingtime: ${pingtime}" >> ${livenesslogfile}
   {{- end }}
+  if [[ ! -f "${GEOSERVER_DATA_DIR}/www/server/serverinfo.html" ]]; then
+    #the serverinfo.html doesn't exist, recover it from backup file
+    cp ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html.bak ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html
+  fi
   exit 0
 fi
 {{- end }}

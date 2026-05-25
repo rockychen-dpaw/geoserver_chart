@@ -1,4 +1,6 @@
-{{- define "geoserver.restart" }}#!/bin/bash
+{{- define "geoserver.restart" }}
+# should called via source
+# will set the var 'retart' to 1 if should restart; otherwise set to 0
 {{- $adminServerIsWorker :=  true }}
 {{- if hasKey $.Values.geoserver "adminServerIsWorker" }}
   {{- $adminServerIsWorker =  $.Values.geoserver.adminServerIsWorker }}
@@ -10,7 +12,7 @@
 {{- end }}
 {{- $log_level := (get $log_levels $log_levelname) | int }}
 {{- $livenessProbe :=  $.Values.geoserver.livenessProbe | default dict }}
-
+restart=0
 {{- if or (not ($.Values.geoserver.clustering | default false)) (eq ($.Values.geoserver.replicas | default 1 | int) 1) }}
 #not geoserver cluster or replicas is 1, restart now 
     {{- if ge $log_level ((get $log_levels "ERROR") | int) }}
@@ -25,7 +27,8 @@ echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Liveness: Try to restart the geocluster ad
 if [[ "${resourceusage}" != "" ]]; then
     sed -i -e "s/<span id=\"monitortime\">[^<]*<\/span>/<span id=\"monitortime\">$(date '+%Y-%m-%d %H:%M:%S')<\/span>/" -e "s/<span id=\"resourceusage\">[^<]*<\/span>/<span id=\"resourceusage\">${resourceusage}<\/span>/g" ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html
 fi
-exit 1
+restart=1
+return
 {{- else }}
 if [[ "${GEOSERVER_ROLE}" == "admin" ]]; then
     #geocluster admin server, not a worker, restart now
@@ -41,7 +44,8 @@ if [[ "${GEOSERVER_ROLE}" == "admin" ]]; then
     if [[ "${resourceusage}" != "" ]]; then
         sed -i -e "s/<span id=\"monitortime\">[^<]*<\/span>/<span id=\"monitortime\">$(date '+%Y-%m-%d %H:%M:%S')<\/span>/" -e "s/<span id=\"resourceusage\">[^<]*<\/span>/<span id=\"resourceusage\">${resourceusage}<\/span>/g" ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html
     fi
-    exit 1
+    restart=1
+    return
 else
 #check whether the other servers are online and also it has the earliest restart time
 {{- if ge $log_level ((get $log_levels "INFO") | int) }}
@@ -114,8 +118,8 @@ else
         if [[ "${resourceusage}" != "" ]]; then
             sed -i -e "s/<span id=\"monitortime\">[^<]*<\/span>/<span id=\"monitortime\">$(date '+%Y-%m-%d %H:%M:%S')<\/span>/" -e "s/<span id=\"resourceusage\">[^<]*<\/span>/<span id=\"resourceusage\">${resourceusage}<\/span>/g" ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html
         fi
-
-        exit 1
+        restart=1
+        return
 {{- if ge $log_level ((get $log_levels "ERROR") | int) }}
     else
         echo "$(date '+%Y-%m-%d %H:%M:%S.%N') Liveness: It is not safe to restart the geoserver right now" >> ${livenesslogfile}
@@ -124,5 +128,7 @@ else
     fi #end for  if $status -eq 0 
 
 fi #end for  if "${GEOSERVER_ROLE}" == "admin" 
+restart=0
+return
 {{- end }} #end for  if eq ($.Values.geoserver.replicas | default 1 | int) 1 
 {{- end }} #end for define
