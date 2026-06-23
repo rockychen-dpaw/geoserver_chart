@@ -72,11 +72,45 @@ if [[ $? -ne 0 ]]; then
   status=$((${status} + 1))
 fi
 
-cp ${GEOSERVER_HOME}/settings/serverinfo.html ${GEOSERVER_DATA_DIR}/www/server
+#create a tmp dir for geoserver
+mkdir /tmp/geoserver
+if [[ $? -ne 0 ]]; then
+  echo "Failed to create the folder '/tmp/geoserver' to hold some runtime data for geoserver"
+  status=$((${status} + 1))
+fi
+
+cp ${GEOSERVER_HOME}/settings/serverinfo.html /tmp/geoserver/serverinfo.html
 if [[ $? -ne 0 ]]; then
   echo "Failed to setup serverinfo page"
   status=$((${status} + 1))
 fi
+rm -rf ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html
+if [[ $? -ne 0 ]]; then
+  echo "Failed to setup serverinfo page"
+  status=$((${status} + 1))
+fi
+ln -s /tmp/geoserver/serverinfo.html ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html
+if [[ $? -ne 0 ]]; then
+  echo "Failed to setup serverinfo page"
+  status=$((${status} + 1))
+fi
+
+echo "{}" > /tmp/geoserver/serverinfo.json
+if [[ $? -ne 0 ]]; then
+  echo "Failed to setup serverinfo json file"
+  status=$((${status} + 1))
+fi
+rm -rf ${GEOSERVER_DATA_DIR}/www/server/serverinfo.json
+if [[ $? -ne 0 ]]; then
+  echo "Failed to setup serverinfo json file"
+  status=$((${status} + 1))
+fi
+ln -s /tmp/geoserver/serverinfo.json ${GEOSERVER_DATA_DIR}/www/server/serverinfo.json
+if [[ $? -ne 0 ]]; then
+  echo "Failed to setup serverinfo json file"
+  status=$((${status} + 1))
+fi
+
 
 if [[ ! -f "${GEOSERVER_DATA_DIR}/www/server/starthistory.html" ]]; then
     cp ${GEOSERVER_HOME}/settings/starthistory.html ${GEOSERVER_DATA_DIR}/www/server

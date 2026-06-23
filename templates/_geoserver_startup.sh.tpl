@@ -4,10 +4,10 @@ LIVENESSLOG_EXPIREDAYS={{$.Values.geoserver.livenesslogExpiredays | default 30}}
 {{- if hasKey $.Values.geoserver "adminServerIsWorker" }}
   {{- $adminServerIsWorker =  $.Values.geoserver.adminServerIsWorker }}
 {{- end }}
-{{- $log_levels := dict "DISABLE" 0 "ERROR" 100 "WARNING" 200 "INFO" 300 "DEBUG" 400 }}
-{{- $log_levelname := upper ($.Values.geoserver.livenesslog | default "DISABLE") }}
+{{- $log_levels := dict "DISABLED" 0 "ERROR" 100 "WARNING" 200 "INFO" 300 "DEBUG" 400 }}
+{{- $log_levelname := upper ($.Values.geoserver.livenesslog | default "DISABLED") }}
 {{- if not (hasKey $log_levels $log_levelname) }}
-{{- $log_levelname = "DISABLE" }}
+{{- $log_levelname = "DISABLED" }}
 {{- end }}
 {{- $log_level := (get $log_levels $log_levelname) | int }}
 
@@ -136,7 +136,7 @@ if [[ $status -eq 0 ]]; then
       fi
 
       nextRestartSeconds=$(date -d "${nextRestartTime}" '+%s')
-      sed -i "s/<span id=\"nextrestarttime\">[^<]*<\/span>/<span id=\"nextrestarttime\">${nextRestartTime}<\/span>/" ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html
+      sed -i "s/<span id=\"nextrestarttime\">[^<]*<\/span>/<span id=\"nextrestarttime\">${nextRestartTime}<\/span>/" /tmp/geoserver/serverinfo.html
       echo ${nextRestartSeconds} > ${GEOSERVER_DATA_DIR}/www/server/nextrestarttime
       touch ${GEOSERVER_DATA_DIR}/www/server/restartenabled
       {{- if ge $log_level ((get $log_levels "INFO") | int) }}
@@ -144,7 +144,7 @@ if [[ $status -eq 0 ]]; then
       {{- end }}
     else
       nextRestartTime="Disabled"
-      sed -i "s/<span id=\"nextrestarttime\">[^<]*<\/span>/<span id=\"nextrestarttime\">${nextRestartTime}<\/span>/" ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html
+      sed -i "s/<span id=\"nextrestarttime\">[^<]*<\/span>/<span id=\"nextrestarttime\">${nextRestartTime}<\/span>/" /tmp/geoserver/serverinfo.html
       echo ${nextRestartTime} > ${GEOSERVER_DATA_DIR}/www/server/nextrestarttime
       rm -rf ${GEOSERVER_DATA_DIR}/www/server/restartenabled
       {{- if ge $log_level ((get $log_levels "INFO") | int) }}
@@ -153,7 +153,7 @@ if [[ $status -eq 0 ]]; then
     fi
     {{- else }}
     nextRestartTime="Disabled"
-    sed -i "s/<span id=\"nextrestarttime\">[^<]*<\/span>/<span id=\"nextrestarttime\">${nextRestartTime}<\/span>/" ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html
+    sed -i "s/<span id=\"nextrestarttime\">[^<]*<\/span>/<span id=\"nextrestarttime\">${nextRestartTime}<\/span>/" /tmp/geoserver/serverinfo.html
     echo ${nextRestartTime} > ${GEOSERVER_DATA_DIR}/www/server/nextrestarttime
     rm -rf ${GEOSERVER_DATA_DIR}/www/server/restartenabled
     {{- if ge $log_level ((get $log_levels "INFO") | int) }}
@@ -193,7 +193,7 @@ if [[ $status -eq 0 ]]; then
     else
         startingtime="${minutes} ${seconds}"
     fi
-    sed -i -e "s/<span id=\"tomcat_version\">[^<]*<\/span>/<span id=\"tomcat_version\">${TOMCAT_VERSION}<\/span>/" -e "s/<span id=\"starttime\">[^<]*<\/span>/<span id=\"starttime\">${starttime}<\/span>/" -e "s/<span id=\"readytime\">[^<]*<\/span>/<span id=\"readytime\">${readytime}<\/span>/" -e "s/<span id=\"startingtime\">[^<]*<\/span>/<span id=\"startingtime\">${startingtime}<\/span>/" -e "s/<span id=\"initialmemory\">[^<]*<\/span>/<span id=\"initialmemory\">${INITIAL_MEMORY}<\/span>/" -e "s/<span id=\"maxmemory\">[^<]*<\/span>/<span id=\"maxmemory\">${MAXIMUM_MEMORY}<\/span>/" -e "s/<span id=\"geoserver_version\">[^<]*<\/span>/<span id=\"geoserver_version\">$(cat /scripts/geoserver_version.txt)<\/span>/" -e "s/<span id=\"os_version\">[^<]*<\/span>/<span id=\"os_version\">$(lsb_release -sd 2>/dev/null)<\/span>/" ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html
+    sed -i -e "s/<span id=\"tomcat_version\">[^<]*<\/span>/<span id=\"tomcat_version\">${TOMCAT_VERSION}<\/span>/" -e "s/<span id=\"starttime\">[^<]*<\/span>/<span id=\"starttime\">${starttime}<\/span>/" -e "s/<span id=\"readytime\">[^<]*<\/span>/<span id=\"readytime\">${readytime}<\/span>/" -e "s/<span id=\"startingtime\">[^<]*<\/span>/<span id=\"startingtime\">${startingtime}<\/span>/" -e "s/<span id=\"initialmemory\">[^<]*<\/span>/<span id=\"initialmemory\">${INITIAL_MEMORY}<\/span>/" -e "s/<span id=\"maxmemory\">[^<]*<\/span>/<span id=\"maxmemory\">${MAXIMUM_MEMORY}<\/span>/" -e "s/<span id=\"geoserver_version\">[^<]*<\/span>/<span id=\"geoserver_version\">$(cat /scripts/geoserver_version.txt)<\/span>/" -e "s/<span id=\"os_version\">[^<]*<\/span>/<span id=\"os_version\">$(lsb_release -sd 2>/dev/null)<\/span>/" /tmp/geoserver/serverinfo.html
 
     echo ${readyseconds} > ${GEOSERVER_DATA_DIR}/www/server/readytime
     #sometimes, kubernete will run the successful startup probe multitimes. that will cause multiple startup recoreds are recorded.
@@ -211,37 +211,36 @@ if [[ $status -eq 0 ]]; then
     fi
 fi
 
-{{- if ge $log_level ((get $log_levels "ERROR") | int) }}
-  {{- if gt ($.Values.geoserver.memoryMonitorInterval | default 0 | int) 0  }}
+#get the geoserver pid
 geoserverpid=$(ps -aux | grep "java" | grep "tomcat"|awk -F ' ' '{print $2}')
-if [[ "${geoserverpid}" == "" ]]; then
-  resourceusage=""
-else
-{{ $.Files.Get "static/resourceusage.sh" | indent 2 }}
+if [[ "${geoserverpid}" != "" ]]; then
+    echo ${geoserverpid} > /tmp/geoserver/geoserverpid
 fi
-  {{- else }}
-resourceusage=""
-  {{- end }}
+#get the resource usage of geoserver
+{{ $.Files.Get "static/resourceusage.sh" }}
+
+{{- if ge $log_level ((get $log_levels "ERROR") | int) }}
 if [[ ${status} -gt 0 ]]; then
   echo "$(date '+%Y-%m-%d %H:%M:%S.%N')-${processid} Startup : Geoserver is not ready. ${resourceusage} , ping: ${pingstatus} , pingtime: ${pingtime}" >> ${livenesslogfile}
 else
   {{- if gt ($.Values.geoserver.memoryMonitorInterval | default 0 | int) 0  }}
-  echo ${geoserverpid} > /tmp/geoserverpid
-  echo "$(date -d '+{{- $.Values.geoserver.memoryMonitorInterval}} seconds' '+%s')" > /tmp/memorymonitornexttime
+  echo "$(date -d '+{{- $.Values.geoserver.memoryMonitorInterval}} seconds' '+%s')" > /tmp/geoserver/memorymonitornexttime
   {{- end }}
   echo "$(date '+%Y-%m-%d %H:%M:%S.%N')-${processid} Startup : Geoserver is ready. ${resourceusage} , ping: ${pingstatus} , pingtime: ${pingtime}" >> ${livenesslogfile}
 fi
 
 if [[ "${resourceusage}" != "" ]]; then
-  sed -i -e "s/<span id=\"monitortime\">[^<]*<\/span>/<span id=\"monitortime\">$(date '+%Y-%m-%d %H:%M:%S')<\/span>/" -e "s/<span id=\"resourceusage\">[^<]*<\/span>/<span id=\"resourceusage\">${resourceusage}<\/span>/g" ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html
+  sed -i -e "s/<span id=\"monitortime\">[^<]*<\/span>/<span id=\"monitortime\">$(date '+%Y-%m-%d %H:%M:%S')<\/span>/" -e "s/<span id=\"resourceusage\">[^<]*<\/span>/<span id=\"resourceusage\">${resourceusage}<\/span>/g" /tmp/geoserver/serverinfo.html
 fi
 
 {{- end }}
-sed -i -e "s/<span id=\"heartbeat\">[^<]*<\/span>/<span id=\"heartbeat\">${now}<\/span>/" -e "s/<span id=\"heartbeat_status\">[^<]*<\/span>/<span id=\"heartbeat_status\">${pingstatus}<\/span>/" -e "s/<span id=\"heartbeat_processingtime\">[^<]*<\/span>/<span id=\"heartbeat_processingtime\">${pingtime}<\/span>/" ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html
+
+sed -i -e "s/<span id=\"heartbeat\">[^<]*<\/span>/<span id=\"heartbeat\">${now}<\/span>/" -e "s/<span id=\"heartbeat_status\">[^<]*<\/span>/<span id=\"heartbeat_status\">${pingstatus}<\/span>/" -e "s/<span id=\"heartbeat_processingtime\">[^<]*<\/span>/<span id=\"heartbeat_processingtime\">${pingtime}<\/span>/" /tmp/geoserver/serverinfo.html
+
 
 if [[ $status -eq 0 ]]; then
     #sometimes, serverinfo.html was deleted for unknown reason, so backup a serverinfo.html first and recover it if it doesn't exist in the future
-    cp ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html.bak
+    cp /tmp/geoserver/serverinfo.html ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html.bak
 fi
 
 exit $status

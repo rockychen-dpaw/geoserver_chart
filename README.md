@@ -45,7 +45,7 @@ The workload messagequeue is deprecated by suffix messagequeue with "\_skipped"
  port: the listening port of the geoserver
  replicas: the number of geoservers in the geocluster. Always redploy geocluster with Helm after replicas value is changed.
  maxstarttimes: the number of restart items will be kept in the log file
- livenesslog: liveness log level. Valid values: DEBUG, INFO, DISABLE
+ livenesslog: liveness log level. Valid values: DEBUG, INFO, DISABLED
  livenesslogExpiredays: liveness log file expire days
  memoryMonitorInterval: the memory monitor interval in seconds.
  liveCheckTimeout: The timeout used to check whether geoserver is live.

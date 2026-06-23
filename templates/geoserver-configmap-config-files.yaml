@@ -1,4 +1,10 @@
 {{- if $.Values.geoserver }}
+{{- $log_levels := dict "DISABLED" 0 "ERROR" 100 "WARNING" 200 "INFO" 300 "DEBUG" 400 }}
+{{- $log_levelname := upper ($.Values.geoserver.livenesslog | default "DISABLED") }}
+{{- if not (hasKey $log_levels $log_levelname) }}
+{{- $log_levelname = "DISABLED" }}
+{{- end }}
+{{- $log_level := (get $log_levels $log_levelname) | int }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -9,15 +15,6 @@ binaryData:
 {{- if hasKey $.Values "gwcClean" }}
   default_gwclayers.html: >- 
 {{ $.Files.Get "static/default_gwclayers.html" | b64enc | indent 4 }}
-  index.html: >- 
-{{ $.Files.Get "static/geoserverindex.html" | b64enc | indent 4 }}
-  index_without_healthcheck.html: >- 
-{{ $.Files.Get "static/geoserverindex_without_healthcheck.html" | b64enc | indent 4 }}
-{{- else }}
-  index.html: >- 
-{{ $.Files.Get "static/geoserverindex_without_gwcclean.html" | b64enc | indent 4 }}
-  index_without_healthcheck.html: >- 
-{{ $.Files.Get "static/geoserverindex_geoserveronly.html" | b64enc | indent 4 }}
 {{- end }}
   livenesslogindex.html: >- 
 {{ $.Files.Get "static/livenesslogindex.html" | b64enc | indent 4 }}
@@ -29,4 +26,29 @@ binaryData:
 {{ $.Files.Get "static/serverinfo.html" | b64enc | indent 4 }}
   starthistory.html: >- 
 {{ $.Files.Get "static/geoserver_restarthistory.html" | b64enc | indent 4 }}
+{{- if ge $log_level ((get $log_levels "ERROR") | int) }}
+{{- if hasKey $.Values "gwcClean" }}
+  index.html: >- 
+{{ $.Files.Get "static/geoserverindex.html" | b64enc | indent 4 }}
+  index_without_healthcheck.html: >- 
+{{ $.Files.Get "static/geoserverindex_without_healthcheck.html" | b64enc | indent 4 }}
+{{- else }}
+  index.html: >- 
+{{ $.Files.Get "static/geoserverindex_without_gwcclean.html" | b64enc | indent 4 }}
+  index_without_healthcheck.html: >- 
+{{ $.Files.Get "static/geoserverindex_geoserveronly.html" | b64enc | indent 4 }}
+{{- end }}
+{{- else }}
+{{- if hasKey $.Values "gwcClean" }}
+  index.html: >- 
+{{ $.Files.Get "static/geoserverindex_without_liveness.html" | b64enc | indent 4 }}
+  index_without_healthcheck.html: >- 
+{{ $.Files.Get "static/geoserverindex_without_healthcheck_and_liveness.html" | b64enc | indent 4 }}
+{{- else }}
+  index.html: >- 
+{{ $.Files.Get "static/geoserverindex_without_gwcclean_and_liveness.html" | b64enc | indent 4 }}
+  index_without_healthcheck.html: >- 
+{{ $.Files.Get "static/geoserverindex_geoserveronly_without_liveness.html" | b64enc | indent 4 }}
+{{- end }}
+{{- end }}
 {{- end }}
