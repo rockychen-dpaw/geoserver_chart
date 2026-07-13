@@ -12,7 +12,7 @@ metadata:
   annotations:
     field.cattle.io/description: customized geoserver config files
 binaryData:
-{{- if hasKey $.Values "gwcClean" }}
+{{- if hasKey $.Values "gwcManage" }}
   default_gwclayers.html: >- 
 {{ $.Files.Get "static/default_gwclayers.html" | b64enc | indent 4 }}
 {{- end }}
@@ -27,26 +27,26 @@ binaryData:
   starthistory.html: >- 
 {{ $.Files.Get "static/geoserver_restarthistory.html" | b64enc | indent 4 }}
 {{- if ge $log_level ((get $log_levels "ERROR") | int) }}
-{{- if hasKey $.Values "gwcClean" }}
+{{- if hasKey $.Values "gwcManage" }}
   index.html: >- 
 {{ $.Files.Get "static/geoserverindex.html" | b64enc | indent 4 }}
   index_without_healthcheck.html: >- 
 {{ $.Files.Get "static/geoserverindex_without_healthcheck.html" | b64enc | indent 4 }}
 {{- else }}
   index.html: >- 
-{{ $.Files.Get "static/geoserverindex_without_gwcclean.html" | b64enc | indent 4 }}
+{{ $.Files.Get "static/geoserverindex_without_gwcmanage.html" | b64enc | indent 4 }}
   index_without_healthcheck.html: >- 
 {{ $.Files.Get "static/geoserverindex_geoserveronly.html" | b64enc | indent 4 }}
 {{- end }}
 {{- else }}
-{{- if hasKey $.Values "gwcClean" }}
+{{- if hasKey $.Values "gwcManage" }}
   index.html: >- 
 {{ $.Files.Get "static/geoserverindex_without_liveness.html" | b64enc | indent 4 }}
   index_without_healthcheck.html: >- 
 {{ $.Files.Get "static/geoserverindex_without_healthcheck_and_liveness.html" | b64enc | indent 4 }}
 {{- else }}
   index.html: >- 
-{{ $.Files.Get "static/geoserverindex_without_gwcclean_and_liveness.html" | b64enc | indent 4 }}
+{{ $.Files.Get "static/geoserverindex_without_gwcmanage_and_liveness.html" | b64enc | indent 4 }}
   index_without_healthcheck.html: >- 
 {{ $.Files.Get "static/geoserverindex_geoserveronly_without_liveness.html" | b64enc | indent 4 }}
 {{- end }}

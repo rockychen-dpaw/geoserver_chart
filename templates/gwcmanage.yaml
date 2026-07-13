@@ -1,11 +1,11 @@
-{{- if $.Values.gwcClean }}
+{{- if $.Values.gwcManage }}
 apiVersion: batch/v1
 kind: CronJob
 metadata:
   {{- if ($.Values.geoserver.clustering | default false) }}
-  name: {{ $.Release.Name}}-geocluster-gwcclean
+  name: {{ $.Release.Name}}-geocluster-gwcmanage
   {{- else }}
-  name: {{ $.Release.Name}}-geoserver-gwcclean
+  name: {{ $.Release.Name}}-geoserver-gwcmanage
   {{- end }}
   namespace: {{ $.Release.Namespace }}
 spec:
@@ -14,7 +14,7 @@ spec:
     metadata:
       namespace: {{ $.Release.Namespace }}
     spec:
-      backoffLimit: {{ $.Values.gwcClean.backoffLimit | default 0 |int }}
+      backoffLimit: {{ $.Values.gwcManage.backoffLimit | default 0 |int }}
       template:
         spec:
           affinity: {}
@@ -22,13 +22,13 @@ spec:
             - command:
                 - python
                 - -m
-                - geoserver_rest.gwcclean
+                - geoserver_rest.gwcmanage
               env:
                 - name: RELEASE_TIME
-                {{- if eq ($.Values.gwcClean.releaseTime | default "")  "" }}
+                {{- if eq ($.Values.gwcManage.releaseTime | default "")  "" }}
                   value: {{ now | date "2006-01-02T15:04:05" | quote }}
                 {{- else }}
-                  value: {{ $.Values.gwcClean.releaseTime | quote }}
+                  value: {{ $.Values.gwcManage.releaseTime | quote }}
                 {{- end }}
                 {{- if ($.Values.geoserver.clustering | default false) }}
                 - name: GEOSERVER_NAME
@@ -41,31 +41,31 @@ spec:
                 - name: GEOSERVER_URL
                   value: "http://{{$.Release.Name}}-geoserver:{{ $.Values.geoserver.port | default 8080 }}/geoserver"
                 {{- end }}
-                {{- range $key,$value := $.Values.gwcClean.envs | default dict }}
+                {{- range $key,$value := $.Values.gwcManage.envs | default dict }}
                 - name: {{ $key }}
                   value: {{ $value | quote }}
                 {{- end }}
               envFrom:
-                {{- range $name,$data := $.Values.gwcClean.secrets }}
+                {{- range $name,$data := $.Values.gwcManage.secrets }}
                 - secretRef:
-                    name: {{ $.Release.Name }}-geoserver-gwcclean-secret-{{ $name }}
+                    name: {{ $.Release.Name }}-geoserver-gwcmanage-secret-{{ $name }}
                     optional: false
                 {{- end }}
-                {{- range $name,$data := $.Values.gwcClean.configmaps }}
+                {{- range $name,$data := $.Values.gwcManage.configmaps }}
                 - configMapRef:
-                    name: {{ $.Release.Name }}-geoserver-gwcclean-configmap-{{ $name }}
+                    name: {{ $.Release.Name }}-geoserver-gwcmanage-configmap-{{ $name }}
                     optional: false
                 {{- end }}
-              image: {{ $.Values.gwcClean.image}}
+              image: {{ $.Values.gwcManage.image}}
               imagePullPolicy: Always
               {{- if ($.Values.geoserver.clustering | default false) }}
-              name: {{ $.Release.Name}}-geocluster-gwcclean
+              name: {{ $.Release.Name}}-geocluster-gwcmanage
               {{- else }}
-              name: {{ $.Release.Name}}-geoserver-gwcclean
+              name: {{ $.Release.Name}}-geoserver-gwcmanage
               {{- end }}
-              {{- if hasKey $.Values.gwcClean "resources" }}
+              {{- if hasKey $.Values.gwcManage "resources" }}
               resources:
-{{ $.Values.gwcClean.resources | toYaml | indent 16 }}
+{{ $.Values.gwcManage.resources | toYaml | indent 16 }}
               {{- end }}
               stdin: true
               terminationMessagePath: /dev/termination-log
@@ -76,22 +76,22 @@ spec:
                 capabilities:
                   drop:
                     - ALL
-                {{- if hasKey $.Values.gwcClean "groupid" }}
-                runAsGroup: {{ $.Values.gwcClean.groupid }}
+                {{- if hasKey $.Values.gwcManage "groupid" }}
+                runAsGroup: {{ $.Values.gwcManage.groupid }}
                 {{- end }}
-                {{- if hasKey $.Values.gwcClean "userid" }}
-                runAsUser: {{ $.Values.gwcClean.userid }}
+                {{- if hasKey $.Values.gwcManage "userid" }}
+                runAsUser: {{ $.Values.gwcManage.userid }}
                 runAsNonRoot: true
                 {{- else}}
                 runAsNonRoot: false
                 {{- end }}
               workingDir: /app
               volumeMounts:
-                {{- if and (hasKey $.Values "gwcClean") $.Values.gwcClean.volume }}
+                {{- if and (hasKey $.Values "gwcManage") $.Values.gwcManage.volume }}
                 - name: report-data
-                  mountPath: {{ $.Values.gwcClean.volume.mountPath | default "/app/reports" }}
+                  mountPath: {{ $.Values.gwcManage.volume.mountPath | default "/app/reports" }}
                 {{- end }}
-                {{- range $name,$config := $.Values.gwcClean.existingVolumes }}
+                {{- range $name,$config := $.Values.gwcManage.existingVolumes }}
                 {{- range $i,$mount := $config.mounts }}
                 - mountPath: {{ $mount.mountPath }}
                   name: {{ $name }}
@@ -101,32 +101,32 @@ spec:
                 {{- end }}  
                 {{- end }}
           dnsPolicy: ClusterFirst
-          {{- if hasKey $.Values.gwcClean "imagepull" }}
+          {{- if hasKey $.Values.gwcManage "imagepull" }}
           imagePullSecrets:
-            - name: {{ $.Release.Name }}-geoserver-gwcclean-secret-imagepull
+            - name: {{ $.Release.Name }}-geoserver-gwcmanage-secret-imagepull
           {{- end }}
           restartPolicy: Never
-          {{- if hasKey $.Values.gwcClean "groupid" }}
+          {{- if hasKey $.Values.gwcManage "groupid" }}
           securityContext:
-            fsGroup: {{ $.Values.gwcClean.groupid }}
+            fsGroup: {{ $.Values.gwcManage.groupid }}
           {{- end }}
           schedulerName: default-scheduler
           terminationGracePeriodSeconds: 30
-          {{ if hasKey $.Values.gwcClean "tolerations" }}
+          {{ if hasKey $.Values.gwcManage "tolerations" }}
           tolerations:
-{{ $.Values.gwcClean.tolerations | toYaml | indent 12 }}
+{{ $.Values.gwcManage.tolerations | toYaml | indent 12 }}
           {{- end }}
-          {{- if $.Values.gwcClean.nodeSelector }}
+          {{- if $.Values.gwcManage.nodeSelector }}
           nodeSelector:
-{{ $.Values.gwcClean.nodeSelector | toYaml | indent 12 }}
+{{ $.Values.gwcManage.nodeSelector | toYaml | indent 12 }}
           {{- end }}
           volumes:
-            {{- if and (hasKey $.Values "gwcClean") $.Values.gwcClean.volume }}
+            {{- if and (hasKey $.Values "gwcManage") $.Values.gwcManage.volume }}
             - name: report-data
               persistentVolumeClaim:
-                claimName: {{ $.Release.Name }}-geoserver-gwcclean-report-data
+                claimName: {{ $.Release.Name }}-geoserver-gwcmanage-report-data
             {{- end }}
-            {{- range $name,$config := $.Values.gwcClean.existingVolumes | default dict }}
+            {{- range $name,$config := $.Values.gwcManage.existingVolumes | default dict }}
             - name: {{ $name }}
               persistentVolumeClaim:
                 {{- if hasKey $config "relativeClaimName" }}
@@ -137,8 +137,8 @@ spec:
                 readOnly: {{ $config.readOnly | default "false" }}
             {{- end }}
 
-  schedule: {{ $.Values.gwcClean.schedule }}
-  successfulJobsHistoryLimit: {{ $.Values.gwcClean.successfulJobsHistoryLimit | default 3 }}
-  failedJobsHistoryLimit: {{ $.Values.gwcClean.failedJobsHistoryLimit | default 1 }}
+  schedule: {{ $.Values.gwcManage.schedule }}
+  successfulJobsHistoryLimit: {{ $.Values.gwcManage.successfulJobsHistoryLimit | default 3 }}
+  failedJobsHistoryLimit: {{ $.Values.gwcManage.failedJobsHistoryLimit | default 1 }}
   suspend: false
 {{- end }}

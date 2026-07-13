@@ -1,7 +1,7 @@
-{{- if hasKey $.Values "gwcClean" }}
+{{- if hasKey $.Values "gwcManage" }}
 {{- $configmaps := 0 }} 
 
-{{- range $name,$data := $.Values.gwcClean.configmaps | default dict }}
+{{- range $name,$data := $.Values.gwcManage.configmaps | default dict }}
 {{- $configmaps = add1 $configmaps}}
 {{- if gt $configmaps 1 }}
 ---
@@ -13,7 +13,7 @@ data:
   {{- end }}
 kind: ConfigMap
 metadata:
-  name: {{ $.Release.Name }}-geoserver-gwcclean-configmap-{{ $name }}
+  name: {{ $.Release.Name }}-geoserver-gwcmanage-configmap-{{ $name }}
   namespace: {{ $.Release.Namespace }}
 {{- end }}
 {{- end }}

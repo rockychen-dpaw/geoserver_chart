@@ -7,7 +7,7 @@
 status=0
 echo "Begin to setup the index page and report folder"
 
-{{- if hasKey $.Values "gwcClean" }}
+{{- if hasKey $.Values "gwcManage" }}
 #create the reports.html if not exist
 if [[ -e "/geoserver/reports/gwclayers.html" ]]; then
     if [[ ! -f "/geoserver/reports/gwclayers.html" ]]; then

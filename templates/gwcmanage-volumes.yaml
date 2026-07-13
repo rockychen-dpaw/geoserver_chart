@@ -1,9 +1,9 @@
-{{- if and (hasKey $.Values "gwcClean") $.Values.gwcClean.volume }}
-{{- $config := $.Values.gwcClean.volume }}
+{{- if and (hasKey $.Values "gwcManage") $.Values.gwcManage.volume }}
+{{- $config := $.Values.gwcManage.volume }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ $.Release.Name }}-geoserver-gwcclean-report-data
+  name: {{ $.Release.Name }}-geoserver-gwcmanage-report-data
 spec:
   accessModes:
     - {{ $config.accessMode | default "ReadWriteOnce" }}
