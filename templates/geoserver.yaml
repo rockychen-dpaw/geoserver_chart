@@ -56,6 +56,9 @@ spec:
             {{- end }}
           securityContext:
             allowPrivilegeEscalation: false
+            seccompProfile:
+              type: RuntimeDefault
+            privileged: false
             capabilities:
               drop:
                 - ALL
@@ -172,6 +175,9 @@ spec:
           {{- end }}
           securityContext:
             allowPrivilegeEscalation: false
+            seccompProfile:
+              type: RuntimeDefault
+            privileged: false
             capabilities:
               drop:
                 - ALL

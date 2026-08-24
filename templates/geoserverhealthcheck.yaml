@@ -97,6 +97,9 @@ spec:
               tty: true
               securityContext:
                 allowPrivilegeEscalation: false
+                seccompProfile:
+                  type: RuntimeDefault
+                privileged: false
                 capabilities:
                   drop:
                     - ALL

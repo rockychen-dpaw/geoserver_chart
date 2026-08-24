@@ -21,6 +21,7 @@ spec:
         #same as matchLabels
         workload.user.cattle.io/workloadselector: apps.statefulset-{{ $.Release.Namespace}}-{{ $.Release.Name }}-postgis
     spec:
+      {{- if $.Values.postgis.initcontainer | default false }}
       initContainers:
         - name: {{ $.Release.Name }}-postgis-init
           command:
@@ -31,7 +32,6 @@ spec:
             runAsNonRoot: false
             readOnlyRootFilesystem: false
             capabilities: {}
-            privileged: false
             allowPrivilegeEscalation: false
             runAsUser: 0
           volumeMounts:
@@ -48,6 +48,7 @@ spec:
           {{- end }}
           {{- end }}
           {{- end }}
+      {{- end }}
       containers:
         - name: {{ $.Release.Name }}-postgis
           args:
@@ -89,6 +90,9 @@ spec:
           stdin: true
           securityContext:
             allowPrivilegeEscalation: false
+            seccompProfile:
+              type: RuntimeDefault
+            privileged: false
             capabilities:
               drop:
                 - ALL
