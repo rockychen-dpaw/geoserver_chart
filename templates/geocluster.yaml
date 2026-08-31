@@ -195,7 +195,7 @@ spec:
             failureThreshold: 1
             successThreshold: 1
             initialDelaySeconds: {{ $livenessProbe.initialDelaySeconds | default 10 }}
-            timeoutSeconds: {{ ceil (addf (mulf (sub ($.Values.geoserver.replicas | default 1) 1) ($.Values.geoserver.liveCheckTimeout | default 0.5)) ($.Values.geoserver.liveCheckTimeout | default 0.5) 1) | int}}
+            timeoutSeconds: {{ ceil (addf (mulf (sub ($.Values.geoserver.replicas | default 1) 1) ($.Values.geoserver.liveCheckTimeout | default 0.5)) ($.Values.geoserver.liveCheckTimeout | default 0.5) 20) | int}}
             periodSeconds: {{ $livenessProbe.periodSeconds | default 10 }}
             exec:
               command:
@@ -543,7 +543,7 @@ spec:
             failureThreshold: 1
             successThreshold: 1
             initialDelaySeconds: {{ $livenessProbe.initialDelaySeconds | default 10 }}
-            timeoutSeconds: {{ ceil (addf ($.Values.geoserver.liveCheckTimeout | default 0.5) 1) | int}}
+            timeoutSeconds: {{ ceil (addf ($.Values.geoserver.liveCheckTimeout | default 0.5) 20) | int}}
             periodSeconds: {{ $livenessProbe.periodSeconds | default 10 }}
             exec:
               command:
