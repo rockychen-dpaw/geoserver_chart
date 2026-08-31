@@ -19,7 +19,7 @@ startseconds=$(cat /tmp/geoserver_starttime)
 geoserver_stime=$(date -d @${startseconds} '+%Y-%m-%dT%H:%M:%S')
 export geoserver_stime
 
-tilevolumemsg="$(df --output="pcent,used,size" -BG /geoserver/data/tiles | sed 1d)"
+tilevolumemsg="$(df --output="pcent,used,size" -BG /geoserver/data/tiles  2>/dev/null | sed 1d)"
 if [[ $? -ne 0 ]]; then
     tiles_pcent=0
     tiles_used=0
@@ -28,7 +28,7 @@ else
     eval $(echo ${tilevolumemsg} | awk '{printf "export tiles_pcent=%.0f ; export tiles_used=%.0f ; export tiles_size=%.0f",$1,$2,$3}')
 fi
 
-datavolumemsg="$(df --output="pcent,used,size" -BG /geoserver/data/data | sed 1d)"
+datavolumemsg="$(df --output="pcent,used,size" -BG /geoserver/data/data  2>/dev/null | sed 1d)"
 if [[ $? -ne 0 ]]; then
     data_pcent=0
     data_used=0
@@ -37,16 +37,16 @@ else
     eval $(echo ${datavolumemsg} | awk '{printf "export data_pcent=%.0f ; export data_used=%.0f ; export data_size=%.0f",$1,$2,$3}')
 fi
 
-instancevolumemsg="$(df --output="pcent,used,size" -BM /geoserver/data/cluster | sed 1d)"
+instancevolumemsg="$(df --output="pcent,used,size" -BM /geoserver/data/cluster 2>/dev/null | sed 1d)"
 checkstatus=$?
 if [[ ${checkstatus} -ne 0 ]]; then
-    instancevolumemsg="$(df --output="pcent,used,size" -BM /geoserver/data/monitoring | sed 1d)"
+    instancevolumemsg="$(df --output="pcent,used,size" -BM /geoserver/data/monitoring 2>/dev/null | sed 1d)"
     checkstatus=$?
     if [[ ${checkstatus} -ne 0 ]]; then
-        instancevolumemsg="$(df --output="pcent,used,size" -BM /geoserver/data/www/server | sed 1d)"
+        instancevolumemsg="$(df --output="pcent,used,size" -BM /geoserver/data/www/server 2>/dev/null | sed 1d)"
         checkstatus=$?
         if [[ ${checkstatus} -ne 0 ]]; then
-            instancevolumemsg="$(df --output="pcent,used,size" -BM /geoserver/data/logs/logging | sed 1d)"
+            instancevolumemsg="$(df --output="pcent,used,size" -BM /geoserver/data/logs/logging 2>/dev/null | sed 1d)"
             checkstatus=$?
         fi
     fi
