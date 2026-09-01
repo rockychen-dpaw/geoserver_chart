@@ -5,6 +5,7 @@
 {{- end }}
 
 
+begintime=$(date '+%s.%N')
 source /geoserver/bin/set_geoserverrole
 geoserverpid=$(cat /tmp/geoserver/geoserverpid)
 
@@ -27,15 +28,16 @@ LIVENESSLOG_EXPIREDAYS={{$.Values.geoserver.livenesslogExpiredays | default 30}}
 source /geoserver/bin/geoserver_can_restart
 if [[ ${canRestart} -eq 1 ]]; then
   #check whether should restart the geoserver.the var 'restart' will be set to  1 if should restart, otherwise will set to 0
-  pingtime=0
-  pingstatus="N/A"
-{{ $.Files.Get "static/resourceusage.sh" | indent 2 }}
   source /geoserver/bin/geoserver_restart
   if [[ ${restart} -eq 1 ]]; then
+    pingtime=0
+    pingstatus="N/A"
+{{ $.Files.Get "static/resourceusage.sh" | indent 4 }}
     if [[ ! -f "/tmp/geoserver/serverinfo.html" ]]; then
       #the serverinfo.html doesn't exist, recover it from backup file
       cp ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html.bak /tmp/geoserver/serverinfo.html
     fi
+{{ $.Files.Get "static/serverinfo.json.sh" | indent 4 }}
     exit 1
   fi
 fi
@@ -93,6 +95,7 @@ if [[ ${status} -eq 0 ]]; then
     #the serverinfo.html doesn't exist, recover it from backup file
     cp ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html.bak /tmp/geoserver/serverinfo.html
   fi
+{{ $.Files.Get "static/serverinfo.json.sh" | indent 2 }}
   exit 0
 fi
 
@@ -104,6 +107,7 @@ fi
     #the serverinfo.html doesn't exist, recover it from backup file
     cp ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html.bak /tmp/geoserver/serverinfo.html
   fi
+{{ $.Files.Get "static/serverinfo.json.sh" | indent 2 }}
   exit ${status}
 {{- else }}
 if [[ -f /tmp/geoserver_failuretimes ]]; then
@@ -122,6 +126,7 @@ if [[ ${failureTimes} -ge {{ $livenessProbe.failureThreshold | default 2 }} ]]; 
     #the serverinfo.html doesn't exist, recover it from backup file
     cp ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html.bak /tmp/geoserver/serverinfo.html
   fi
+{{ $.Files.Get "static/serverinfo.json.sh" | indent 2 }}
   exit ${status}
 else
   {{- if ge $log_level ((get $log_levels "ERROR") | int) }}
@@ -131,6 +136,7 @@ else
     #the serverinfo.html doesn't exist, recover it from backup file
     cp ${GEOSERVER_DATA_DIR}/www/server/serverinfo.html.bak /tmp/geoserver/serverinfo.html
   fi
+{{ $.Files.Get "static/serverinfo.json.sh" | indent 2 }}
   exit 0
 fi
 {{- end }}

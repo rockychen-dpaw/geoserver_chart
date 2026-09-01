@@ -62,13 +62,5 @@ fi
 
 resourceusage="CPU: ${geoserver_cpu}% , Virtual Memory:${geoserver_vmemory}MB , Physical Memory:${geoserver_pmemory}MB ; GWC Volume:${tiles_pcent}%(${tiles_used}G of ${tiles_size}G) ; Instance Volume:${instance_pcent}%(${instance_used}M of ${instance_size}M)"
 
-if [[ ${data_size} -gt 0 ]]; then
-    resourceusage="${resourceusage} ; Data Volume:${data_pcent}%(${data_used}M of ${data_size}M)"
-
-    echo "{\"ping_time\":${pingtime},\"ping_status\":\"${pingstatus}\",\"stime\":\"${geoserver_stime}\",\"cpu\":${geoserver_cpu},\"vmemory\":${geoserver_vmemory},\"pmemory\":${geoserver_pmemory},\"volume_instance_used\":${instance_used},\"volume_instance_size\":${instance_size},\"volume_data_used\":${data_used},\"volume_data_size\":${data_size},\"volume_tiles_used\":${tiles_used},\"volume_tiles_size\":${tiles_size}}" > /tmp/geoserver/serverinfo.json
-else
-    echo "{\"ping_time\":${pingtime},\"ping_status\":\"${pingstatus}\",\"stime\":\"${geoserver_stime}\",\"cpu\":${geoserver_cpu},\"vmemory\":${geoserver_vmemory},\"pmemory\":${geoserver_pmemory},\"volume_instance_used\":${instance_used},\"volume_instance_size\":${instance_size},\"volume_tiles_used\":${tiles_used},\"volume_tiles_size\":${tiles_size}}" > /tmp/geoserver/serverinfo.json
-fi
-
 
 set +o pipefail

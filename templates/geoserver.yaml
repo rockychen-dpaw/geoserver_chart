@@ -164,7 +164,7 @@ spec:
             failureThreshold: 1
             successThreshold: 1
             initialDelaySeconds: {{ $livenessProbe.initialDelaySeconds | default 10 }}
-            timeoutSeconds: {{ ceil (addf ($.Values.geoserver.liveCheckTimeout | default 0.5) 20) | int}}
+            timeoutSeconds: {{ ceil (addf ($.Values.geoserver.liveCheckTimeout | default 0.5) 60) | int}}
             periodSeconds: {{ $livenessProbe.periodSeconds | default 10 }}
             exec:
               command:
