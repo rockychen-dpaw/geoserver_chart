@@ -1,4 +1,5 @@
 {{- if and $.Values.geoserver ($.Values.geoserver.clustering | default false) }}
+
 {{- $startupProbe :=  $.Values.geoserver.startupProbe | default dict }}
 {{- $livenessProbe :=  $.Values.geoserver.livenessProbe | default dict }}
 {{- $adminServerIsWorker :=  true }}
@@ -40,6 +41,15 @@ spec:
           matchLabels:
             workload.user.cattle.io/workloadselector: apps.{{ $.Release.Namespace}}-{{ $.Release.Name }}-geocluster-workers
       {{- end }}
+      {{- end }}
+      {{- if or (hasKey $.Values.geoserver "imagepull") (and $.Values.gwcManage (hasKey $.Values.gwcManage "runAsWorkload") (not $.Values.gwcManage.runAsWorkload) $.Values.gwcManage.imagepull) }}
+      imagePullSecrets:
+        {{- if hasKey $.Values.geoserver "imagepull" }}
+        - name: {{ $.Release.Name }}-geoserver-secret-imagepull
+        {{- end }}
+        {{- if and $.Values.gwcManage (hasKey $.Values.gwcManage "runAsWorkload") (not $.Values.gwcManage.runAsWorkload) $.Values.gwcManage.imagepull }}
+        - name: {{ $.Release.Name }}-geoserver-gwcmanage-secret-imagepull
+        {{- end }}
       {{- end }}
       initContainers:
         - name: {{ $.Release.Name }}-geocluster-init
@@ -130,6 +140,93 @@ spec:
             {{- end }}  
             {{- end }}
       containers:
+        {{- if and $.Values.gwcManage (hasKey $.Values.gwcManage "runAsWorkload") (not $.Values.gwcManage.runAsWorkload ) }}
+        - name: {{ $.Release.Name }}-geocluster-gwcmanager
+          image: {{ $.Values.gwcManage.image}}
+          imagePullPolicy: Always
+          {{- if hasKey $.Values.gwcManage "resources" }}
+          resources:
+{{ $.Values.gwcManage.resources | toYaml | indent 12 }}
+          {{- end }}
+          command:
+            - supercronic
+            - -quiet
+            - /etc/crontab
+          stdin: true
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          tty: true
+          env:
+            - name: RELEASE_TIME
+            {{- if eq ($.Values.gwcManage.releaseTime | default "")  "" }}
+              value: {{ now | date "2006-01-02T15:04:05" | quote }}
+            {{- else }}
+              value: {{ $.Values.gwcManage.releaseTime | quote }}
+            {{- end }}
+            - name: GEOSERVER_NAME
+              value: "localhost"
+            - name: GEOSERVER_URL
+              value: "http://localhost:{{ $.Values.geoserver.port | default 8080 }}/geoserver"
+            {{- range $key,$value := $.Values.gwcManage.envs | default dict }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+          envFrom:
+            {{- range $name,$data := $.Values.gwcManage.secrets }}
+            - secretRef:
+                name: {{ $.Release.Name }}-geoserver-gwcmanage-secret-{{ $name }}
+                optional: false
+            {{- end }}
+            {{- range $name,$data := $.Values.gwcManage.configmaps }}
+            - configMapRef:
+                name: {{ $.Release.Name }}-geoserver-gwcmanage-configmap-{{ $name }}
+                optional: false
+            {{- end }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            seccompProfile:
+              type: RuntimeDefault
+            privileged: false
+            capabilities:
+              drop:
+                - ALL
+            {{- if hasKey $.Values.gwcManage "groupid" }}
+            runAsGroup: {{ $.Values.gwcManage.groupid }}
+            {{- end }}
+            {{- if hasKey $.Values.gwcManage "userid" }}
+            runAsUser: {{ $.Values.gwcManage.userid }}
+            runAsNonRoot: true
+            {{- else}}
+            runAsNonRoot: false
+            {{- end }}
+          workingDir: /app
+          volumeMounts:
+            - name: crontab-file
+              mountPath: "/etc/crontab"
+              subPath: "crontab"
+            {{- if $.Values.gwcManage.volume }}
+            - name: report-data
+              mountPath: {{ $.Values.gwcManage.volume.mountPath | default "/app/reports" }}
+            {{- end }}
+            {{- range $name,$config := $.Values.gwcManage.existingVolumes }}
+            {{- range $i,$mount := $config.mounts }}
+            - mountPath: {{ $mount.mountPath }}
+              name: {{ $name }}
+              {{- if hasKey $mount "subPath" }}
+              subPath: {{ $mount.subPath }}
+              {{- end }}
+            {{- end }}  
+            {{- end }}
+            {{- range $name,$config := $.Values.geoserver.volumeClaimTemplates }}
+            {{- range $i,$mount := $config.mounts }}
+            - mountPath: {{ $mount.mountPath }}
+              name: {{ $.Release.Name }}-geocluster-{{ $name }}
+              {{- if hasKey $mount "subPath" }}
+              subPath: {{ $mount.subPath }}
+              {{- end }}
+            {{- end }}  
+            {{- end }}
+        {{- end }}
         - name: {{ $.Release.Name }}-geocluster
           image: {{ $.Values.geoserver.image }}
           imagePullPolicy: Always
@@ -343,6 +440,29 @@ spec:
           claimName: {{ $config.claimName }}
           readOnly: {{ $config.readOnly | default "false" }}
       {{- end }}
+      #Volumes for gwcmanager
+      {{- if and $.Values.gwcManage (hasKey $.Values.gwcManage "runAsWorkload") (not $.Values.gwcManage.runAsWorkload ) }}
+      - name: crontab-file
+        configMap:
+          name: {{ $.Release.Name }}-gwcmanage-configmap-crontab-file
+          optional: false
+          defaultMode: 0555
+        {{- if $.Values.gwcManage.volume }}
+      - name: report-data
+        persistentVolumeClaim:
+          claimName: {{ $.Release.Name }}-geoserver-gwcmanage-report-data
+        {{- end }}
+        {{- range $name,$config := $.Values.gwcManage.existingVolumes | default dict }}
+      - name: {{ $name }}
+        persistentVolumeClaim:
+            {{- if hasKey $config "relativeClaimName" }}
+          claimName: {{ $.Release.Name}}-{{ $config.relativeClaimName }}
+            {{- else }}
+          claimName: {{ $config.claimName }}
+            {{- end }}
+          readOnly: {{ $config.readOnly | default "false" }}
+        {{- end }}
+      {{- end }}
   volumeClaimTemplates:
     {{- range $name,$config := $.Values.geoserver.volumeClaimTemplates }}
     - apiVersion: v1
@@ -393,6 +513,15 @@ spec:
         workload.user.cattle.io/workloadselector: apps.{{ $.Release.Namespace}}-{{ $.Release.Name }}-geoclusteradmin
         workload.user.cattle.io/geoclusterselector: apps.{{ $.Release.Namespace}}-{{ $.Release.Name }}-geocluster
     spec:
+      {{- if or (hasKey $.Values.geoserver "imagepull") (and $.Values.gwcManage (hasKey $.Values.gwcManage "runAsWorkload") (not $.Values.gwcManage.runAsWorkload) $.Values.gwcManage.imagepull) }}
+      imagePullSecrets:
+        {{- if hasKey $.Values.geoserver "imagepull" }}
+        - name: {{ $.Release.Name }}-geoserver-secret-imagepull
+        {{- end }}
+        {{- if and $.Values.gwcManage (hasKey $.Values.gwcManage "runAsWorkload") (not $.Values.gwcManage.runAsWorkload) $.Values.gwcManage.imagepull }}
+        - name: {{ $.Release.Name }}-geoserver-gwcmanage-secret-imagepull
+        {{- end }}
+      {{- end }}
       initContainers:
         - name: {{ $.Release.Name }}-geoclusteradmin-init
           image: {{ $.Values.geoserver.image }}
@@ -480,6 +609,93 @@ spec:
             {{- end }}  
             {{- end }}
       containers:
+        {{- if and $.Values.gwcManage (hasKey $.Values.gwcManage "runAsWorkload") (not $.Values.gwcManage.runAsWorkload ) }}
+        - name: {{ $.Release.Name }}-geoclusteradmin-gwcmanager
+          image: {{ $.Values.gwcManage.image}}
+          imagePullPolicy: Always
+          {{- if hasKey $.Values.gwcManage "resources" }}
+          resources:
+{{ $.Values.gwcManage.resources | toYaml | indent 12 }}
+          {{- end }}
+          command:
+            - supercronic
+            - -quiet
+            - /etc/crontab
+          stdin: true
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          tty: true
+          env:
+            - name: RELEASE_TIME
+            {{- if eq ($.Values.gwcManage.releaseTime | default "")  "" }}
+              value: {{ now | date "2006-01-02T15:04:05" | quote }}
+            {{- else }}
+              value: {{ $.Values.gwcManage.releaseTime | quote }}
+            {{- end }}
+            - name: GEOSERVER_NAME
+              value: "localhost"
+            - name: GEOSERVER_URL
+              value: "http://localhost:{{ $.Values.geoserver.port | default 8080 }}/geoserver"
+            {{- range $key,$value := $.Values.gwcManage.envs | default dict }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+          envFrom:
+            {{- range $name,$data := $.Values.gwcManage.secrets }}
+            - secretRef:
+                name: {{ $.Release.Name }}-geoserver-gwcmanage-secret-{{ $name }}
+                optional: false
+            {{- end }}
+            {{- range $name,$data := $.Values.gwcManage.configmaps }}
+            - configMapRef:
+                name: {{ $.Release.Name }}-geoserver-gwcmanage-configmap-{{ $name }}
+                optional: false
+            {{- end }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            seccompProfile:
+              type: RuntimeDefault
+            privileged: false
+            capabilities:
+              drop:
+                - ALL
+            {{- if hasKey $.Values.gwcManage "groupid" }}
+            runAsGroup: {{ $.Values.gwcManage.groupid }}
+            {{- end }}
+            {{- if hasKey $.Values.gwcManage "userid" }}
+            runAsUser: {{ $.Values.gwcManage.userid }}
+            runAsNonRoot: true
+            {{- else}}
+            runAsNonRoot: false
+            {{- end }}
+          workingDir: /app
+          volumeMounts:
+            - name: crontab-file
+              mountPath: "/etc/crontab"
+              subPath: "crontab"
+            {{- if $.Values.gwcManage.volume }}
+            - name: report-data
+              mountPath: {{ $.Values.gwcManage.volume.mountPath | default "/app/reports" }}
+            {{- end }}
+            {{- range $name,$config := $.Values.gwcManage.existingVolumes }}
+            {{- range $i,$mount := $config.mounts }}
+            - mountPath: {{ $mount.mountPath }}
+              name: {{ $name }}
+              {{- if hasKey $mount "subPath" }}
+              subPath: {{ $mount.subPath }}
+              {{- end }}
+            {{- end }}  
+            {{- end }}
+            {{- range $name,$config := $.Values.geoserver.adminVolumes }}
+            {{- range $i,$mount := $config.mounts }}
+            - mountPath: {{ $mount.mountPath }}
+              name: {{ $name }}
+              {{- if hasKey $mount "subPath" }}
+              subPath: {{ $mount.subPath }}
+              {{- end }}
+            {{- end }}  
+            {{- end }}
+        {{- end }}
         - name: {{ $.Release.Name }}-geoclusteradmin
           image: {{ $.Values.geoserver.image }}
           imagePullPolicy: Always

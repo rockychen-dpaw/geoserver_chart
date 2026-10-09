@@ -1,4 +1,4 @@
-{{- if $.Values.gwcManage }}
+{{- if and $.Values.gwcManage ( or (not (hasKey $.Values.gwcManage "runAsWorkload")) $.Values.gwcManage.runAsWorkload ) }}
 apiVersion: batch/v1
 kind: CronJob
 metadata:

@@ -1,0 +1,11 @@
+{{- if and $.Values.gwcManage (hasKey $.Values.gwcManage "runAsWorkload") (not $.Values.gwcManage.runAsWorkload ) }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $.Release.Name }}-gwcmanage-configmap-crontab-file
+  annotations:
+    field.cattle.io/description: geoserver scripts
+binaryData:
+  crontab: >- 
+{{ include "gwcmanage.crontab" . | b64enc | indent 4 }}
+{{- end }}

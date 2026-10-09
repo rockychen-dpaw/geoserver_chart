@@ -9,8 +9,9 @@ echo "Begin to setup the index page and report folder"
 
 {{- if hasKey $.Values "gwcManage" }}
 #create the reports.html if not exist
-if [[ -e "/geoserver/reports/gwclayers.html" ]]; then
-    if [[ ! -f "/geoserver/reports/gwclayers.html" ]]; then
+  {{- if or (not (hasKey $.Values.gwcManage "runAsWorkload")) $.Values.gwcManage.runAsWorkload  }}
+if [[ -L "/geoserver/reports/gwclayers.html" || -e "/geoserver/reports/gwclayers.html" ]]; then
+    if [[ ! -f "/geoserver/reports/gwclayers.html" || -L "/geoserver/reports/gwclayers.html" ]]; then
         echo "Remove gwclayers.html(/geoserver/reports/gwclayers.html)"
         rm -fdr "/geoserver/reports/gwclayers.html"
         status=$((${status} + $?))
@@ -24,18 +25,32 @@ fi
 
 #create soft link
 if [[ -e "${GEOSERVER_DATA_DIR}/www/server/gwclayers.html" ]]; then
-    if [[ ! -h "${GEOSERVER_DATA_DIR}/www/server/gwclayers.html" ]]; then
+    if [[ ! -L "${GEOSERVER_DATA_DIR}/www/server/gwclayers.html" ]]; then
         echo "Remove non-link file(${GEOSERVER_DATA_DIR}/www/server/gwclayers.html)"
         rm -fdr "${GEOSERVER_DATA_DIR}/www/server/gwclayers.html"
         status=$((${status} + $?))
     fi
 fi
-if [[ ! -h "${GEOSERVER_DATA_DIR}/www/server/gwclayers.html" ]]; then
+if [[ ! -L "${GEOSERVER_DATA_DIR}/www/server/gwclayers.html" ]]; then
     #create soft link www/server/reports 
     echo "Create the soft link(${GEOSERVER_DATA_DIR}/www/server/gwclayers.html)"
     ln -s "/geoserver/reports/gwclayers.html" "${GEOSERVER_DATA_DIR}/www/server/gwclayers.html"
     status=$((${status} + $?))
 fi
+  {{- else }}
+if [[ -L "/geoserver/data/www/server/gwclayers.html" || -e "/geoserver/data/www/server/gwclayers.html" ]]; then
+    if [[ ! -f "/geoserver/data/www/server/gwclayers.html" || -L "/geoserver/data/www/server/gwclayers.html" ]]; then
+        echo "Remove gwclayers.html(/geoserver/data/www/server/gwclayers.html)"
+        rm -fdr "/geoserver/data/www/server/gwclayers.html"
+        status=$((${status} + $?))
+    fi
+fi
+if [[ ! -f "/geoserver/data/www/server/gwclayers.html" ]]; then
+    echo "Create the default gwclayers.html"
+    cp /geoserver/settings/default_gwclayers.html "/geoserver/data/www/server/gwclayers.html"
+    status=$((${status} + $?))
+fi
+  {{- end }}
 {{- end }}
 
 #prepare the index.html file and find the reportFolder
