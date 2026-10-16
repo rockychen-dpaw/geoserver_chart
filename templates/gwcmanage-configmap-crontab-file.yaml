@@ -1,4 +1,4 @@
-{{- if and $.Values.gwcManage (hasKey $.Values.gwcManage "runAsWorkload") (not $.Values.gwcManage.runAsWorkload ) }}
+{{- if and $.Values.gwcManage (hasKey $.Values.geoserver "sharedGWC") (not $.Values.geoserver.sharedGWC ) }}
 apiVersion: v1
 kind: ConfigMap
 metadata:

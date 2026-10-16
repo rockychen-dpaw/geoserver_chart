@@ -42,12 +42,12 @@ spec:
             workload.user.cattle.io/workloadselector: apps.{{ $.Release.Namespace}}-{{ $.Release.Name }}-geocluster-workers
       {{- end }}
       {{- end }}
-      {{- if or (hasKey $.Values.geoserver "imagepull") (and $.Values.gwcManage (hasKey $.Values.gwcManage "runAsWorkload") (not $.Values.gwcManage.runAsWorkload) $.Values.gwcManage.imagepull) }}
+      {{- if or (hasKey $.Values.geoserver "imagepull") (and $.Values.gwcManage (hasKey $.Values.geoserver "sharedGWC") (not $.Values.geoserver.sharedGWC) $.Values.gwcManage.imagepull) }}
       imagePullSecrets:
         {{- if hasKey $.Values.geoserver "imagepull" }}
         - name: {{ $.Release.Name }}-geoserver-secret-imagepull
         {{- end }}
-        {{- if and $.Values.gwcManage (hasKey $.Values.gwcManage "runAsWorkload") (not $.Values.gwcManage.runAsWorkload) $.Values.gwcManage.imagepull }}
+        {{- if and $.Values.gwcManage (hasKey $.Values.geoserver "sharedGWC") (not $.Values.geoserver.sharedGWC) $.Values.gwcManage.imagepull }}
         - name: {{ $.Release.Name }}-geoserver-gwcmanage-secret-imagepull
         {{- end }}
       {{- end }}
@@ -140,7 +140,7 @@ spec:
             {{- end }}  
             {{- end }}
       containers:
-        {{- if and $.Values.gwcManage (hasKey $.Values.gwcManage "runAsWorkload") (not $.Values.gwcManage.runAsWorkload ) }}
+        {{- if and $.Values.gwcManage (hasKey $.Values.geoserver "sharedGWC") (not $.Values.geoserver.sharedGWC ) }}
         - name: {{ $.Release.Name }}-geocluster-gwcmanager
           image: {{ $.Values.gwcManage.image}}
           imagePullPolicy: Always
@@ -441,7 +441,7 @@ spec:
           readOnly: {{ $config.readOnly | default "false" }}
       {{- end }}
       #Volumes for gwcmanager
-      {{- if and $.Values.gwcManage (hasKey $.Values.gwcManage "runAsWorkload") (not $.Values.gwcManage.runAsWorkload ) }}
+      {{- if and $.Values.gwcManage (hasKey $.Values.geoserver "sharedGWC") (not $.Values.geoserver.sharedGWC ) }}
       - name: crontab-file
         configMap:
           name: {{ $.Release.Name }}-gwcmanage-configmap-crontab-file
@@ -513,12 +513,12 @@ spec:
         workload.user.cattle.io/workloadselector: apps.{{ $.Release.Namespace}}-{{ $.Release.Name }}-geoclusteradmin
         workload.user.cattle.io/geoclusterselector: apps.{{ $.Release.Namespace}}-{{ $.Release.Name }}-geocluster
     spec:
-      {{- if or (hasKey $.Values.geoserver "imagepull") (and $.Values.gwcManage (hasKey $.Values.gwcManage "runAsWorkload") (not $.Values.gwcManage.runAsWorkload) $.Values.gwcManage.imagepull) }}
+      {{- if or (hasKey $.Values.geoserver "imagepull") (and $.Values.gwcManage (hasKey $.Values.geoserver "sharedGWC") (not $.Values.geoserver.sharedGWC) $.Values.gwcManage.imagepull) }}
       imagePullSecrets:
         {{- if hasKey $.Values.geoserver "imagepull" }}
         - name: {{ $.Release.Name }}-geoserver-secret-imagepull
         {{- end }}
-        {{- if and $.Values.gwcManage (hasKey $.Values.gwcManage "runAsWorkload") (not $.Values.gwcManage.runAsWorkload) $.Values.gwcManage.imagepull }}
+        {{- if and $.Values.gwcManage (hasKey $.Values.geoserver "sharedGWC") (not $.Values.geoserver.sharedGWC) $.Values.gwcManage.imagepull }}
         - name: {{ $.Release.Name }}-geoserver-gwcmanage-secret-imagepull
         {{- end }}
       {{- end }}
@@ -609,7 +609,7 @@ spec:
             {{- end }}  
             {{- end }}
       containers:
-        {{- if and $.Values.gwcManage (hasKey $.Values.gwcManage "runAsWorkload") (not $.Values.gwcManage.runAsWorkload ) }}
+        {{- if and $.Values.gwcManage (hasKey $.Values.geoserver "sharedGWC") (not $.Values.geoserver.sharedGWC ) }}
         - name: {{ $.Release.Name }}-geoclusteradmin-gwcmanager
           image: {{ $.Values.gwcManage.image}}
           imagePullPolicy: Always

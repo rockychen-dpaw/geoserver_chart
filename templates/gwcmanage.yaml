@@ -1,4 +1,4 @@
-{{- if and $.Values.gwcManage ( or (not (hasKey $.Values.gwcManage "runAsWorkload")) $.Values.gwcManage.runAsWorkload ) }}
+{{- if and $.Values.gwcManage ( or (not (hasKey $.Values.geoserver "sharedGWC")) $.Values.geoserver.sharedGWC ) }}
 apiVersion: batch/v1
 kind: CronJob
 metadata:

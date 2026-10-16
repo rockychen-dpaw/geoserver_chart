@@ -9,7 +9,7 @@ echo "Begin to setup the index page and report folder"
 
 {{- if hasKey $.Values "gwcManage" }}
 #create the reports.html if not exist
-  {{- if or (not (hasKey $.Values.gwcManage "runAsWorkload")) $.Values.gwcManage.runAsWorkload  }}
+  {{- if or (not (hasKey $.Values.geoserver "sharedGWC")) $.Values.geoserver.sharedGWC  }}
 if [[ -L "/geoserver/reports/gwclayers.html" || -e "/geoserver/reports/gwclayers.html" ]]; then
     if [[ ! -f "/geoserver/reports/gwclayers.html" || -L "/geoserver/reports/gwclayers.html" ]]; then
         echo "Remove gwclayers.html(/geoserver/reports/gwclayers.html)"
