@@ -42,5 +42,5 @@
     <string>image/png</string>
     <string>image/jpeg</string>
   </defaultOtherCacheFormats>
-  <lockProviderName>fileLock</lockProviderName>
+  <lockProviderName>redisLock</lockProviderName>
 </GeoServerGWCConfig>
