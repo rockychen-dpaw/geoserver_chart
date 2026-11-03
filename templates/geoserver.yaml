@@ -201,9 +201,18 @@ spec:
               mountPath: "/geoserver/bin"
             {{- if gt (len ($.Values.geoserver.customsettings | default list)) 0  }}
             {{- range $config := $.Values.geoserver.customsettings }}
+            {{- if and (hasKey $config "overwrite") (not $config.overwrite) }}
             - name: geoserver-customsettings
               mountPath: "/geoserver/customsettings/{{$config.mountPath}}"
               subPath: {{$config.name}}
+            {{- end }}  
+            {{- end }}  
+            {{- range $config := $.Values.geoserver.customsettings }}
+            {{- if or (not (hasKey $config "overwrite")) $config.overwrite }}
+            - name: geoserver-customsettings-readonly
+              mountPath: "/geoserver/customsettings-readonly/{{$config.mountPath}}"
+              subPath: {{$config.name}}
+            {{- end }}  
             {{- end }}  
             {{- end }}  
             {{- if $.Values.geoserverHealthcheck }}
@@ -266,6 +275,11 @@ spec:
       - name: geoserver-customsettings
         configMap:
           name: {{ $.Release.Name }}-geoserver-configmap-customsettings
+          optional: false
+          defaultMode: 0777
+      - name: geoserver-customsettings-readonly
+        configMap:
+          name: {{ $.Release.Name }}-geoserver-configmap-customsettings-readonly
           optional: false
           defaultMode: 0777
       {{- end }}

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<userRegistry xmlns="http://www.geoserver.org/security/users" version="1.0">
+    <users>
+        <user enabled="true" name="geoserveradmin@dbca.wa.gov.au" password="digest1:6pfyWecJ72EjX3h0fKccWEewG1hc8FHh1f2IubzbxIc9cETn1CnTZ2rPXgmtKdnT"/>
+        <user enabled="true" name="rockyc-admin@dpaw.onmicrosoft.com" password="digest1:6pfyWecJ72EjX3h0fKccWEewG1hc8FHh1f2IubzbxIc9cETn1CnTZ2rPXgmtKdnT"/>
+        <user enabled="true" name="ashleyf-admin@dpaw.onmicrosoft.com" password="digest1:6pfyWecJ72EjX3h0fKccWEewG1hc8FHh1f2IubzbxIc9cETn1CnTZ2rPXgmtKdnT"/>
+        <user enabled="true" name="kelly.thomas-admin@dpaw.onmicrosoft.com" password="digest1:6pfyWecJ72EjX3h0fKccWEewG1hc8FHh1f2IubzbxIc9cETn1CnTZ2rPXgmtKdnT"/>
+    </users>
+    <groups>
+        <group enabled="true" name="ADMIN_GROUP">
+            <member username="geoserveradmin@dbca.wa.gov.au"/>
+            <member username="rockyc-admin@dpaw.onmicrosoft.com"/>
+            <member username="ashleyf-admin@dpaw.onmicrosoft.com"/>
+            <member username="kelly.thomas-admin@dpaw.onmicrosoft.com"/>
+        </group>
+    </groups>
+</userRegistry>

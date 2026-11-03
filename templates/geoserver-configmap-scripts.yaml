@@ -1,4 +1,12 @@
 {{- if $.Values.geoserver }}
+{{- $nfsCount := 0 }}
+{{- if and $.Values.geoserver.volumes $.Values.geoserver.volumes.pvcs }}
+{{- range $name,$config := $.Values.geoserver.volumes.pvcs | default dict }}
+  {{- if and $config.storageClassName (hasPrefix "nfs-" $config.storageClassName) (not (empty $config.mounts))}}
+      {{ $nfsCount = add1 $nfsCount}}
+  {{- end }}
+{{- end }}
+{{- end }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -10,6 +18,10 @@ binaryData:
 {{ include "geoserver.geoserver_startup" . | b64enc | indent 4 }}
   geoserver_liveness: >- 
 {{ include "geoserver.geoserver_liveness" . | b64enc | indent 4 }}
+{{- if ge $nfsCount 1 }}
+  geoserver_readiness: >- 
+{{ include "geoserver.geoserver_readiness" . | b64enc | indent 4 }}
+{{- end }}
   init_geoserver: >- 
 {{ include "geoserver.init_geoserver" . | b64enc | indent 4 }}
   start_geoserver: >- 

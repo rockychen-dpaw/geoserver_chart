@@ -5,11 +5,27 @@ kind: ConfigMap
 metadata:
   name: {{ $.Release.Name }}-geoserver-configmap-customsettings
   annotations:
-    field.cattle.io/description: customized geoserver settings
+    field.cattle.io/description: default geoserver settings
 binaryData:
   {{- range $config := $.Values.geoserver.customsettings }}
+  {{- if and (hasKey $config "overwrite") (not $config.overwrite) }}
   {{$config.name}}: >- 
 {{ $.Files.Get $config.path | b64enc | indent 4 }}
+  {{- end }}
+  {{- end }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $.Release.Name }}-geoserver-configmap-customsettings-readonly
+  annotations:
+    field.cattle.io/description: readonly geoserver settings
+binaryData:
+  {{- range $config := $.Values.geoserver.customsettings }}
+  {{- if or (not (hasKey $config "overwrite")) $config.overwrite }}
+  {{$config.name}}: >- 
+{{ $.Files.Get $config.path | b64enc | indent 4 }}
+  {{- end }}
   {{- end }}
 {{- end }}
 {{- end }}

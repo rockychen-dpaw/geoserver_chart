@@ -195,11 +195,21 @@ if [[ $? -ne 0 ]]; then
 fi
 
 {{- if gt (len ($.Values.geoserver.customsettings | default list)) 0  }}
-echo "Copy the custom settings to geoserver data dir"
-cp -rfL /geoserver/customsettings/* ${GEOSERVER_DATA_DIR}
-if [[ $? -ne 0 ]]; then
-  echo "Failed to copy the custom settings to geoserver data dir"
-  status=$((${status} + 1))
+if [[ -d "/geoserver/customsettings" ]]; then
+    echo "Copy the default custom settings to geoserver data dir if the setting doesn't exist"
+    cp -r --update=none /geoserver/customsettings/* ${GEOSERVER_DATA_DIR}
+    if [[ $? -ne 0 ]]; then
+        echo "Failed to copy the default custom settings to geoserver data dir."
+        status=$((${status} + 1))
+    fi
+fi
+if [[ -d "/geoserver/customsettings-readonly" ]]; then
+    echo "Copy the readonly custom settings to geoserver data dir"
+    cp -rf /geoserver/customsettings-readonly/* ${GEOSERVER_DATA_DIR}
+    if [[ $? -ne 0 ]]; then
+        echo "Failed to copy the readonly custom settings to geoserver data dir."
+        status=$((${status} + 1))
+    fi
 fi
 {{- end }}
 
