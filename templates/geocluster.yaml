@@ -403,6 +403,7 @@ spec:
       {{- if hasKey $.Values.geoserver "groupid" }}
       securityContext:
         fsGroup: {{ $.Values.geoserver.groupid }}
+        fsGroupChangePolicy: "OnRootMismatch"
       {{- end }}
       terminationGracePeriodSeconds: 30
       {{- if $.Values.geoserver.tolerations }}
@@ -908,6 +909,7 @@ spec:
       {{- if hasKey $.Values.geoserver "groupid" }}
       securityContext:
         fsGroup: {{ $.Values.geoserver.groupid }}
+        fsGroupChangePolicy: "OnRootMismatch"
       {{- end }}
       terminationGracePeriodSeconds: 30
       {{- if $.Values.geoserver.adminTolerations }}

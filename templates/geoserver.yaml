@@ -243,6 +243,7 @@ spec:
       {{- if hasKey $.Values.geoserver "groupid" }}
       securityContext:
         fsGroup: {{ $.Values.geoserver.groupid }}
+        fsGroupChangePolicy: "OnRootMismatch"
       {{- end }}
       restartPolicy: Always
       schedulerName: default-scheduler
