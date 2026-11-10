@@ -5,6 +5,6 @@
   <roleSource class="org.geoserver.security.config.PreAuthenticatedUserNameFilterConfig$PreAuthenticatedUserNameRoleSource">Header</roleSource>
   <userGroupServiceName>default</userGroupServiceName>
   <roleServiceName>default</roleServiceName>
-  <rolesHeaderAttribute>x-groups</rolesHeaderAttribute>
+  <rolesHeaderAttribute>x-groups2</rolesHeaderAttribute>
   <principalHeaderAttribute>x-email</principalHeaderAttribute>
 </requestHeaderAuthentication>
