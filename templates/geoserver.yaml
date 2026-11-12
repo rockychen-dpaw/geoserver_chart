@@ -31,7 +31,7 @@ spec:
       initContainers:
         - name: {{ $.Release.Name }}-geoserver-init
           image: {{ $.Values.geoserver.image }}
-          imagePullPolicy: Always
+          imagePullPolicy: {{ $.Values.geoserver.imagePullPolicy | default "Always" }}
           command:
             - /geoserver/bin/init_geoserver
           env:

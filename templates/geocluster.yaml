@@ -64,7 +64,7 @@ spec:
       initContainers:
         - name: {{ $.Release.Name }}-geocluster-init
           image: {{ $.Values.geoserver.image }}
-          imagePullPolicy: Always
+          imagePullPolicy: {{ $.Values.geoserver.imagePullPolicy | default "Always" }}
           command:
             - /geoserver/bin/init_geoserver
           env:
@@ -153,7 +153,7 @@ spec:
         {{- if and $.Values.gwcManage (hasKey $.Values.geoserver "sharedGWC") (not $.Values.geoserver.sharedGWC ) }}
         - name: {{ $.Release.Name }}-geocluster-gwcmanager
           image: {{ $.Values.gwcManage.image}}
-          imagePullPolicy: Always
+          imagePullPolicy: {{ $.Values.gwcManage.imagePullPolicy | default "Always" }}
           {{- if hasKey $.Values.gwcManage "resources" }}
           resources:
 {{ $.Values.gwcManage.resources | toYaml | indent 12 }}
@@ -239,7 +239,7 @@ spec:
         {{- end }}
         - name: {{ $.Release.Name }}-geocluster
           image: {{ $.Values.geoserver.image }}
-          imagePullPolicy: Always
+          imagePullPolicy: {{ $.Values.geoserver.imagePullPolicy | default "Always" }}
           command:
             - /geoserver/bin/start_geoserver
           stdin: true
@@ -561,7 +561,7 @@ spec:
       initContainers:
         - name: {{ $.Release.Name }}-geoclusteradmin-init
           image: {{ $.Values.geoserver.image }}
-          imagePullPolicy: Always
+          imagePullPolicy: {{ $.Values.geoserver.imagePullPolicy | default "Always" }}
           command:
             - /geoserver/bin/init_geoserver
           env:
@@ -648,7 +648,7 @@ spec:
         {{- if and $.Values.gwcManage (hasKey $.Values.geoserver "sharedGWC") (not $.Values.geoserver.sharedGWC ) }}
         - name: {{ $.Release.Name }}-geoclusteradmin-gwcmanager
           image: {{ $.Values.gwcManage.image}}
-          imagePullPolicy: Always
+          imagePullPolicy: {{ $.Values.gwcManage.imagePullPolicy | default "Always" }}
           {{- if hasKey $.Values.gwcManage "resources" }}
           resources:
 {{ $.Values.gwcManage.resources | toYaml | indent 12 }}
@@ -734,7 +734,7 @@ spec:
         {{- end }}
         - name: {{ $.Release.Name }}-geoclusteradmin
           image: {{ $.Values.geoserver.image }}
-          imagePullPolicy: Always
+          imagePullPolicy: {{ $.Values.geoserver.imagePullPolicy | default "Always" }}
           command:
             - /geoserver/bin/start_geoserver
           stdin: true
