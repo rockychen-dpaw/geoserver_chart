@@ -136,6 +136,7 @@ spec:
           {{- if hasKey $.Values.geoserverHealthcheck "groupid" }}
           securityContext:
             fsGroup: {{ $.Values.geoserverHealthcheck.groupid }}
+            fsGroupChangePolicy: "OnRootMismatch"
           {{- end }}
           schedulerName: default-scheduler
           terminationGracePeriodSeconds: 30
